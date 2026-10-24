@@ -259,13 +259,14 @@ export class Updater {
 
   // onTick(seconds waited): about once a second, for a live status; the deadline counts the probing too (a find()
   // still running at the end is left to finish on its own; what it opens it closes again)
+  // deep: true, or after that many ms of waiting: the ports of other names too (find(filter, true))
   async waitFor(filter, ms, onTick, deep = false) {
     const t0 = Date.now(), end = t0 + ms;
     const timer = onTick ? setInterval(() => onTick(Math.round((Date.now() - t0) / 1000)), 1000) : null;
     try {
       while (Date.now() < end) {
         const run = { gaveUp: false, got: null };
-        const dev = await within(this.find(filter, deep).then((d) => { if (run.gaveUp && d) d.link.close(); else run.got = d; return d; }),
+        const dev = await within(this.find(filter, deep === true || (typeof deep === "number" && Date.now() - t0 >= deep)).then((d) => { if (run.gaveUp && d) d.link.close(); else run.got = d; return d; }),
           Math.max(0, end - Date.now()), null);
         if (dev) return dev;
         run.gaveUp = true;
@@ -355,7 +356,9 @@ export class Updater {
     await gone(dev.link, 15000);                       // never probe a port while its device is still leaving the USB
     await sleep(t.reboot);
     const wait = jumped ? t.jumped : t.loader;
-    const ota = await this.waitFor(IS_OTA, wait, (s) => step("wait", s + Math.round(t.reboot / 1000)), true);
+    // (named ports first, as the reference installer; after 10 s the other ports too: Windows can name the loader
+    // generically, "USB MIDI Device")
+    const ota = await this.waitFor(IS_OTA, wait, (s) => step("wait", s + Math.round(t.reboot / 1000)), 10000);
     if (jumped && !(ota && OUR_LOADER(ota.id) && sameKeyboard(ota.id.model.replace(/^ota-/i, ""), dev.id.model))) {
       if (ota) ota.link.close();
       throw fail(ota ? "foreign" : "lost", ota ? `the device restarted into the update mode of another firmware (${ota.id.text}): nothing was written`

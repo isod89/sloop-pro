@@ -1,6 +1,8 @@
 # SLOOP Pro (SLOOP on the M-Vave SMK-37): build the three model packages in WSL, make the site, open the installer.
 #   INSTALL-SLOOP-PRO.bat          build, then serve the installer and the editor on http://localhost:8767
 #   build-sloop-pro.ps1 -NoServe   build only (the packages and their SHA-256 in build\release\)
+#   build-sloop-pro.ps1 -SiteOnly  no compile: the installer site again from the packages already in build\release\
+#                                  (OUVRIR-INSTALLATEUR-PRO.bat)
 #   build-sloop-pro.ps1 -Diag      a diagnostic build: the USB serial console in (HOME menu > USB > USB SERIAL ON, then
 #                                  a terminal on the keyboard's COM port: status, smk, padtest, leds)
 # Settings (environment, all optional):
@@ -11,7 +13,7 @@
 # From a SLOOP folder next to this one it also takes the sample cache (build\genwav, gen_samples.cache: a faster first
 # build) and the editor's audio preview (build\preview), when they are not here yet.
 # SLICE stays out (FELUCCA_SLICE=0), as in SLOOP's build.
-param([switch]$NoServe, [switch]$Diag)
+param([switch]$NoServe, [switch]$Diag, [switch]$SiteOnly)
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 $distro = if ($env:SLOOP_WSL_DISTRO) { $env:SLOOP_WSL_DISTRO } else { 'MinUI-Build' }
@@ -43,6 +45,13 @@ Write-Host "  WSL $distro, toolchain $tc, SDK $sdk" -ForegroundColor DarkGray
 Remove-Item Env:FELUCCA_SLICE -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force build\release | Out-Null
 $models = @(@('pro', 'sloop-pro.fwsc', 'SMK-37 Pro / Starrykey 37 Play'), @('elite', 'sloop-pro-elite.fwsc', 'SMK-37 Elite'), @('mke', 'sloop-pro-mke.fwsc', 'MKE-P37'))
+if ($SiteOnly) {
+  foreach ($mdl in $models) {
+    if (-not (Test-Path (Join-Path build\release $mdl[1]))) { throw "build\release\$($mdl[1]) is missing: run INSTALL-SLOOP-PRO.bat once first" }
+  }
+  $models = @()
+  $pkOnly = $true
+}
 $first = $true
 foreach ($mdl in $models) {
   Write-Host "== Building SLOOP Pro for the $($mdl[2]) (WSL $distro)" -ForegroundColor Cyan
@@ -54,7 +63,8 @@ foreach ($mdl in $models) {
   Copy-Item (Join-Path build $mdl[1]) (Join-Path build\release $mdl[1]) -Force
   $first = $false
 }
-$pk = $models | ForEach-Object { Join-Path build\release $_[1] }
+if ($pkOnly) { $pk = @('build\release\sloop-pro.fwsc', 'build\release\sloop-pro-elite.fwsc', 'build\release\sloop-pro-mke.fwsc') }
+else { $pk = $models | ForEach-Object { Join-Path build\release $_[1] } }
 Write-Host "== Packages (build\release)" -ForegroundColor Cyan
 foreach ($p in $pk) { $h = (Get-FileHash -Algorithm SHA256 $p).Hash.ToLower(); Write-Host "  $p  $h" }
 Get-FileHash -Algorithm SHA256 $pk | ForEach-Object { "$($_.Hash.ToLower())  $(Split-Path $_.Path -Leaf)" } | Set-Content build\release\SHA256SUMS.txt

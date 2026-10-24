@@ -142,7 +142,7 @@ const TEXT = {
     nopkg: "Aucun paquet SLOOP Pro pour cet appareil : ",
     model: "Le modèle ne correspond pas : ",
     lost: "La connexion USB a été perdue. Rebranchez et réessayez.",
-    noloader: "Le clavier en mode mise à jour est introuvable. Rebranchez le câble USB et appuyez de nouveau sur Installer (il reste en mode mise à jour jusqu'à la fin).",
+    noloader: "Le clavier en mode mise à jour est introuvable par Chrome. N'éteignez pas le clavier : fermez Chrome complètement (toutes les fenêtres), rouvrez cette page et appuyez de nouveau sur Installer : ça reprend où ça s'est arrêté.",
     noreturn: "Le clavier n'est pas revenu. Éteignez-le et rallumez-le.",
     mismatch: "Écrit, mais le clavier annonce une autre version : ",
     foreign: "Le clavier est en mode mise à jour d'un autre firmware. Terminez cette mise à jour avec son propre outil (M-UPGRADE), puis réessayez : ",
@@ -188,7 +188,7 @@ const TEXT = {
     nopkg: "No SLOOP Pro package for this device: ",
     model: "The model does not match: ",
     lost: "The USB connection was lost. Replug it and try again.",
-    noloader: "The keyboard in update mode was not found. Replug the USB cable and press Install again (it stays in update mode until it is finished).",
+    noloader: "Chrome does not see the keyboard in update mode. Do not switch the keyboard off: close Chrome completely (every window), open this page again and press Install again: it goes on where it stopped.",
     noreturn: "The keyboard did not come back. Switch it off and on.",
     mismatch: "Written, but the keyboard reports another version: ",
     foreign: "The keyboard is in the update mode of another firmware. Finish that update with its own updater (M-UPGRADE), then try again: ",
@@ -234,7 +234,7 @@ const TEXT = {
     nopkg: "この機器用の SLOOP Pro パッケージがありません: ",
     model: "モデルが合いません: ",
     lost: "USB の接続が切れました。挿し直してもう一度押してください。",
-    noloader: "書き込みモードのキーボードが見つかりません。USB を挿し直してもう一度押してください。",
+    noloader: "Chrome から書き込みモードのキーボードが見えません。電源は切らずに、Chrome を完全に閉じてこのページを開き直し、もう一度押してください（続きから再開します）。",
     noreturn: "キーボードが戻ってきません。電源を入れ直してください。",
     mismatch: "書き込みは終わりましたが、別のバージョンを報告しています: ",
     foreign: "キーボードは別のファームウェアの書き込みモードです。そのアップデーター（M-UPGRADE）で終えてから、もう一度: ",
@@ -359,13 +359,15 @@ function choose(idText) {
   return c;
 }
 
+let midi = null;
 $("go").addEventListener("click", async () => {
   if (writing) return;
   if (!$("risk").checked) { sayK("needRisk", "", "bad"); return; }
   lockAll(true);
   $("bar").value = 0;
-  let midi;
-  try { midi = await navigator.requestMIDIAccess({ sysex: true }); }
+  /* one MIDI access for the page's whole life (as the reference installer): a new one per click leaves the ports of
+     the old one to the garbage collector, and Windows' Chrome then sees a port it cannot open */
+  try { midi = midi || await navigator.requestMIDIAccess({ sysex: true }); }
   catch (e) { sayK("denied", "", "bad"); lockAll(false); return; }
   try {
     const up = new Updater(midi, log);
