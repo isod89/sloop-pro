@@ -24,7 +24,7 @@ M-VAVE SMK-37 — with what the bigger keyboard brings:
 | | |
 |---|---|
 | **37 velocity keys** | the 27 middle keys as SLOOP's, velocity from your unit's factory curves (KEY VELOCITY: dynamic, soft, hard, fixed); the outer 10 play notes, or drums on the drum track |
-| **16 RGB pads** | the drum kit (default) or the selected track's 16 steps, in the screen's track colours; the sound picker (turn K4); piano, mix and song tiles in the layers; PAD LIGHTS brightness |
+| **16 RGB pads** | the drum kit (default), the selected track's sound (NOTES) or its 16 steps, in the screen's track colours; the sound picker (turn K4); piano, mix and song tiles in the layers; PAD LIGHTS brightness |
 | **4 faders, 5 banks** | A level, B filter, C reverb, D delay of the four tracks, E the selected synth track's envelope (ADSR) |
 | **8 knobs** | MASTER, SELECT, track, sound, and the four dials, as on screen (or the SMK layout) |
 | **Wheels and pedal** | pitch bend (BEND UP / DOWN), vibrato, a sustain pedal on the PEDAL jack |

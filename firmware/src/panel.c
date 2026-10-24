@@ -145,8 +145,14 @@ static const uint16_t LIGHTS_NS[LIGHTS_N] = {0u, 500u, 1000u, 2000u};   /* the b
                                                 * LED ~95 us, the glow (landmarks) 4 us (fm1_input.h) */
 static uint8_t usb_serial;                      /* menu USB SERIAL: 1 = the serial console presented (usb.c) */
 static uint8_t usb_rate;                        /* menu USB RATE (2.7 beta): 0 AUTO, 1 44.1, 2 48 kHz (usb.c usb_rate_mode, at the next start) */
+#if BOARD_SMK37
+static uint8_t cpu1_off = 1;                    /* menu 2ND CORE: 1 = OFF, every render unit on core 0 (cpu1.h cpu1_units);
+                                                 * SLOOP Pro: OFF by default (bit 26 set = ON); core 1 starts at power-on
+                                                 * only when ON */
+#else
 static uint8_t cpu1_off;                        /* menu 2ND CORE: 1 = OFF, every render unit on core 0 (cpu1.h cpu1_units);
                                                  * 2.7: ON by default (bit 26 set = OFF); core 1 starts at power-on only when ON */
+#endif
 static uint8_t vis_style;                       /* the visualiser's style, 0..11 (ui_vis.c) */
 static uint8_t knob_accel_off;                  /* menu KNOB ACCEL (2.7): 1 = OFF, one value a detent however fast (ui_input.c accel) */
 static uint8_t step_adv_off;                    /* menu SEQ > STEP ADVANCE (2.7.1): 1 = OFF, the STEP page's cursor stays where it
@@ -160,7 +166,11 @@ UI_SMALL static uint32_t lights_word(void)
            (uint32_t)(lights_sync % 3u) << 12 | (uint32_t)(lights_mout != 0u) << 14 | (uint32_t)(lights_min == 1u) << 15 |
            (uint32_t)(usb_serial != 0u) << 16 | (uint32_t)(vis_style % VIS_STYLES) << 17 |
            (uint32_t)(lights_min >= 2u && lights_min <= 17u ? lights_min - 1u : 0u) << 21 |   /* 2.6: CH n (n 1..16; 0 none) */
+#if BOARD_SMK37
+           (uint32_t)(cpu1_off == 0u) << 26 |          /* SLOOP Pro: 2ND CORE ON (OFF by default) */
+#else
            (uint32_t)(cpu1_off != 0u) << 26 |          /* 2ND CORE OFF (2.7: ON by default; 2.6 took 21..25) */
+#endif
            (uint32_t)(knob_accel_off != 0u) << 27 |    /* KNOB ACCEL OFF (2.7; 0 = ON, as before 2.7) */
            (uint32_t)(usb_rate % 3u) << 28 |           /* USB RATE (2.7 beta; 0 = AUTO, as before) */
            (uint32_t)(theme_on != 0u) << 30 |
@@ -181,9 +191,14 @@ UI_SMALL static void lights_from_word(uint32_t w)
         lights_min = (uint8_t)(((w >> 21) & 31u) + 1u);   /* 2.6: CH n (an older SLOOP reads NOTES) */
     usb_serial = (uint8_t)((w >> 16) & 1u);
     vis_style = (uint8_t)(((w >> 17) & 15u) % VIS_STYLES);   /* the visualiser (ui_vis.c); 0 in 2.3 = OSCILLOSCOPE */     /* menu USB SERIAL (usb.c usb_cdc_on, at the next start); 0 in 2.3 = OFF */
+#if BOARD_SMK37
+    cpu1_off = (uint8_t)!((w >> 26) & 1u);      /* SLOOP Pro: bit 26 set = ON, so OFF by default (an earlier SLOOP Pro's
+                                                 * ON, bit 26 clear, reads OFF once) */
+#else
     cpu1_off = (uint8_t)((w >> 26) & 1u);       /* menu 2ND CORE (ui_menu.c); 2.7: bit 26 set = OFF, so any older settings
                                                  * word (2.6 and before: 0) reads as ON, the two-core SLOOP (an early 2.7 beta
                                                  * set it for ON: that FM-1 reads OFF once) */
+#endif
     cpu1_units = cpu1_off ? 0 : -1;
     knob_accel_off = (uint8_t)((w >> 27) & 1u);  /* menu KNOB ACCEL (2.7): an older word reads ON */
     usb_rate = (uint8_t)(((w >> 28) & 3u) % 3u); /* menu USB RATE (2.7 beta): an older word reads AUTO */

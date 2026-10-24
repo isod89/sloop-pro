@@ -7,8 +7,12 @@
 #if BOARD_SMK37
 static uint8_t smk_fbank, smk_fbank_new;           /* FADER BANK: 0 level, 1 filter, 2 reverb, 3 delay, 4 env (main.c smk_faders) */
 #define FB_N 5u                                    /* the banks, A..E (ui_fbank.c) */
-static uint8_t pad_steps;                          /* the pads on the PLAY layer: 0 DRUM KIT (the default), 1 STEPS;
-                                                    * KNOB BANK + FADER BANK (smk_input.h, seq.c pad_drum); not kept */
+static uint8_t pad_steps;                          /* the pads on the PLAY layer: 0 DRUM KIT (the default), 1 NOTES (the
+                                                    * selected track's sound on the 16 white keys F3..G5), 2 STEPS;
+                                                    * KNOB BANK + FADER BANK, in that order (smk_input.h, seq.c
+                                                    * pad_drum); not kept */
+#define PADS_NOTES 1u
+#define PADS_STEPS 2u
 /* SMK-37 Pro: one flag per id. Ids 0..18 are the button LEDs (smk_input.h), the note keys (no LEDs of
  * their own) take LED_KEY0 + k; ui_leds shows white keys F3..G5 on the 16 RGB pads. */
 #define LED_BUF 64u
@@ -301,8 +305,8 @@ UI_SMALL static void ui_leds(void)
     fm1_led[SMK_BTN_KNOB_BANK] = pick_pin || (int32_t)(fm1_ms - pick_k4_until) < 0;   /* KNOB BANK: picker pinned, PRESETS turning */
     smk_pad_pick = (uint16_t)(pick_shown() ? 0xFFFFu : 0u);   /* (these pads: no notes) */
     smk_pad_grid = (uint8_t)padgrid_on();          /* (steps and tiles: reading order) */
-    smk_pad_drums = (uint8_t)(!pad_steps && ui.layer == LY_PLAY && !smk_pad_grid);   /* the pads: DRUM KIT or STEPS */
-    smk_pad_steps = (uint8_t)(pad_steps && ui.layer == LY_PLAY && !smk_pad_grid);
+    smk_pad_drums = (uint8_t)(!pad_steps && ui.layer == LY_PLAY && !smk_pad_grid);   /* the pads: DRUM KIT, NOTES (neither: */
+    smk_pad_steps = (uint8_t)(pad_steps == PADS_STEPS && ui.layer == LY_PLAY && !smk_pad_grid);   /* the white keys) or STEPS */
     if (!is_drum(TSEL) && TSEL->p[P_AMODE])        /* ARP lit while the selected track's arpeggiator runs */
         fm1_led[panel.btn[B_ARP]] = 1;
     if ((int32_t)(fm1_ms - bled_hold_until) < 0)   /* (console bled: only that LED) */
@@ -371,6 +375,25 @@ UI_SMALL static void ui_leds(void)
                     padled_set(c, (uint8_t)(col[0] * 3u >> 3), (uint8_t)(col[1] * 3u >> 3), (uint8_t)(col[2] * 3u >> 3));
                 else
                     padled_set(c, 40, 40, 40);
+            }
+        } else if (pad_steps == PADS_NOTES && ui.layer == LY_PLAY && !smk_pad_grid) {
+            /* NOTES: the pads are the white keys F3..G5 (bottom row F3..C4, top row D4..G5) and play the selected track,
+             * as the keys (QNT WHITE: the white keys walk its scale, the root on C4). In its colour: bright while the
+             * note sounds or is held, the root's pads half, the others dim, a silent pad dark; the drum track: its
+             * kit as DRUM KIT */
+            track_t *t = TSEL;
+            uint32_t nt = fm1_in.notes | keys_sounding(t), k, p, sh;
+            for (c = 0; c < 16u; c++) {
+                k = key_of_white(c);
+                if ((nt >> k) & 1u)
+                    sh = 0u;
+                else if (is_drum(t))
+                    sh = 2u;
+                else if ((p = kb_pitch(t, k, song.octave)) == KB_SILENT)
+                    sh = 8u;
+                else
+                    sh = (p + 120u - (uint32_t)t->p[P_ROOT]) % 12u == 0u ? 2u : 4u;
+                padled_set(SMK_PAD_OF_WHITE(c), (uint8_t)(col[0] >> sh), (uint8_t)(col[1] >> sh), (uint8_t)(col[2] >> sh));
             }
         } else if (smk_pad_drums) {                /* DRUM KIT: the kit in the drum track's colour, a pad a sound: lit
                                                     * while it sounds or is held, the others dim (never dark) */
@@ -1285,7 +1308,7 @@ UI_SMALL static void ui_input(void)
         }
         ui.force = 1;
     }
-    {   /* KNOB BANK + FADER BANK (the stock firmware's PAD BANK): the pads DRUM KIT <-> STEPS. The second pressed while
+    {   /* KNOB BANK + FADER BANK (the stock firmware's PAD BANK): the pads DRUM KIT -> NOTES -> STEPS. The second pressed while
          * the first is held (or both at once); the first one's screen goes again. Once a press, 180 ms apart at least */
         static uint32_t pd_t;
         static uint8_t pd_fbank;
@@ -1294,12 +1317,12 @@ UI_SMALL static void ui_input(void)
             pressed &= ~(kb | fbk);
             if (fm1_ms - pd_t >= 180u) {
                 pd_t = fm1_ms;
-                pad_steps = (uint8_t)!pad_steps;
+                pad_steps = (uint8_t)((pad_steps + 1u) % 3u);
                 pick_close();
                 if (fb_shown())
                     smk_fbank = pd_fbank;                       /* (the bank as before the FADER BANK press) */
                 fb_close();
-                ui_message(pad_steps ? "PADS: STEPS" : "PADS: DRUM KIT");
+                ui_message(pad_steps == PADS_STEPS ? "PADS: STEPS" : pad_steps == PADS_NOTES ? "PADS: NOTES" : "PADS: DRUM KIT");
                 ui.force = 1;
             }
         } else if (pressed & fbk) {

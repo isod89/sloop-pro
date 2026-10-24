@@ -54,7 +54,7 @@ SLOOP Pro.
 | OCTAVE− / OCTAVE+ | OCT− / OCT+ |
 | KNOB BANK | épingle le sélecteur de sons |
 | FADER BANK | l'écran des banques de faders, puis banque suivante A→B→C→D→E |
-| KNOB BANK + FADER BANK | pads : KIT DE BATTERIE ↔ PAS (STEPS) |
+| KNOB BANK + FADER BANK | pads : KIT DE BATTERIE → NOTES (le son de la piste choisie) → PAS (STEPS) |
 | < / > | page précédente / suivante (SEQ maintenu : pages de pas) |
 | < + > | mode SYNTH ↔ DAW (contrôleur MIDI) |
 | 27 touches du milieu (F3–G5) | les 27 touches du FM-1, avec la vélocité |
@@ -69,7 +69,7 @@ SLOOP Pro.
 K2 change de section, K5–K8 règlent les lignes, OCT+ valide, OCT− ferme :
 SCREEN · LIGHTS (… **PAD LIGHTS** : luminosité des pads HIGH / MID / LOW) · AUDIO (SPEAKER LOWCUT, LIMITER,
 FILTER RESO) · USB · SEQ (STEP ADVANCE, DRUM PREVIEW) · PLAY (KEY VELOCITY, BEND UP, BEND DOWN, KNOB ACCEL) ·
-MIDI (TRS MIDI OUT, MODE, CHANNEL, LOCAL) · DAW · SYSTEM (2ND CORE, HARDWARE CALIBRATION, …, ABOUT).
+MIDI (TRS MIDI OUT, MODE, CHANNEL, LOCAL) · DAW · SYSTEM (2ND CORE : OFF par défaut, HARDWARE CALIBRATION, …, ABOUT).
 
 ## 4. Liste de tests (à cocher sur le clavier)
 
@@ -78,7 +78,7 @@ Notez ce qui va et ce qui ne va pas, avec le modèle (Pro / Elite / MKE) et le n
 1. [ ] Installation depuis le firmware M-VAVE : la page indique le bon modèle et « Terminé ».
 2. [ ] Démarrage : logo SLOOP avec le badge **PRO** orange, version 2.8.1 dessous. Menu > SYSTEM > ABOUT : « SLOOP PRO ».
 3. [ ] Les 37 touches jouent, douces et fortes (vélocité) ; les 5 touches basses et hautes aussi.
-4. [ ] Les 16 pads : kit de batterie (pads orange, plus vifs quand ils sonnent) ; KNOB BANK + FADER BANK : les pas.
+4. [ ] Les 16 pads : kit de batterie (pads orange, plus vifs quand ils sonnent) ; KNOB BANK + FADER BANK : NOTES (le son de la piste choisie), encore une fois : les pas.
    La rangée du haut = pas 1–8.
 5. [ ] Les 8 encodeurs : un cran = un pas, rien ne saute ; K1 = volume.
 6. [ ] Faders : banques A à E. **E** : choisir une piste synthé, bouger les faders → l'enveloppe change à l'écran et à l'oreille.

@@ -859,8 +859,8 @@ static void smkset_boot(void)                      /* after the settings (persis
         trs_out = (uint8_t)!(w >> 31);             /* bit 31, 1 = OFF (older data: ON) */
         usb_rate = 0, theme_on = 0, rec_quant_off = 0;   /* (SLOOP 2.7's settings in those bits: their defaults, AUTO,
                                                           * palette, QUANT ON; the next save writes them) */
-        cpu1_off = 0, cpu1_units = -1, knob_accel_off = 0;   /* (bits 26, 27: spare in the 2.6-based SMK-37 builds, so
-                                                              * 2ND CORE ON, KNOB ACCEL ON, as 2.7 reads 2.6's word) */
+        cpu1_off = 1, cpu1_units = 0, knob_accel_off = 0;    /* (bits 26, 27: spare in the 2.6-based SMK-37 builds, so
+                                                              * 2ND CORE OFF (SLOOP Pro's default), KNOB ACCEL ON) */
     }
     if (smkset_old_have) {
         bend_up = (uint8_t)bend_up_of_byte(smkset_old_ml[0]);             /* (0: the default) */

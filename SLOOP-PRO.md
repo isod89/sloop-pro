@@ -118,7 +118,7 @@ update mode (UBOOT).
 | OCT+ | octave up | drums: hard hits | OCTAVE+ | OCT+ |
 | — | — | — | KNOB BANK | pins the pad sound picker open / closes it (lit while pinned or while K4 turns) |
 | — | — | — | FADER BANK | the fader bank screen; pressed again, < > or SELECT: the next bank A→B→C→D→E (closes after 4 s; lit while up; closes the pad picker) |
-| — | — | — | KNOB BANK + FADER BANK | the pads on the PLAY screen: DRUM KIT (default) ↔ STEPS (as the stock PAD BANK combo) |
+| — | — | — | KNOB BANK + FADER BANK | the pads on the PLAY screen: DRUM KIT (default) → NOTES → STEPS (as the stock PAD BANK combo) |
 | — | — | — | < | page back (as SELECT, never tempo); SEQ held or pads on STEPS: step page back; visualiser: style |
 | — | — | — | > | page forward; SEQ held or pads on STEPS: step page forward; visualiser: style |
 | — | — | — | < + > | SYNTH ↔ DAW mode ([DAW mode](#daw-mode)) |
@@ -130,7 +130,7 @@ update mode (UBOOT).
 | 27 keys F3–G5 | notes; in layers: tiles (steps, FX, mix…) | keys F3–G5 (middle 27) | same, with velocity |
 | — | — | keys C3–E3 (lowest 5) | synth tracks: notes; drum track: C3 kick, D3 snare, E3 hat (black keys = left white key) |
 | — | — | keys G#5–C6 (highest 5) | synth tracks: notes; drum track: G#5 cowbell, A5 open hat, B5 crash, C6 ride |
-| LEDs under 27 keys | what is on / playing | 16 RGB pads | PLAY screen: DRUM KIT (default; a pad a drum sound whatever track is selected, velocity, recorded into the drum track while recording; orange, dim / bright while it sounds) or STEPS (KNOB BANK + FADER BANK; the selected track's 16 steps of the page, top row 1–8: empty dim white, set in the track's colour, playhead white; tap sets / clears; drums: the sound last played). Layers: SEQ / FX / GLO / SAVE tiles, SCALE piano, EDIT / ARP held the white keys |
+| LEDs under 27 keys | what is on / playing | 16 RGB pads | PLAY screen: DRUM KIT (default; a pad a drum sound whatever track is selected, velocity, recorded into the drum track while recording; orange, dim / bright while it sounds) or NOTES (KNOB BANK + FADER BANK once: the selected track's sound on the 16 white keys F3–G5, bottom row F3–C4, top row D4–G5, with velocity, as the keys: recorded into that track, QNT WHITE walks its scale; its colour, bright while a note sounds, the root's pads half, a silent pad dark) or STEPS (KNOB BANK + FADER BANK again; the selected track's 16 steps of the page, top row 1–8: empty dim white, set in the track's colour, playhead white; tap sets / clears; drums: the sound last played). Layers: SEQ / FX / GLO / SAVE tiles, SCALE piano, EDIT / ARP held the white keys |
 
 ## Velocity
 
@@ -264,7 +264,7 @@ FADER BANK closes it (one screen at a time).
 | OCTAVE− held at power-on | USB rescue |
 | OCTAVE− + OCTAVE+ held at power-on | hardware calibration (re-teach buttons, knobs and the wheels) |
 | OCTAVE− + OCTAVE+ held 5 s, stopped | update mode (UBOOT) |
-| KNOB BANK + FADER BANK (SMK-37) | the pads: DRUM KIT ↔ STEPS (DAW mode: the pads' bank A / B) |
+| KNOB BANK + FADER BANK (SMK-37) | the pads: DRUM KIT → NOTES → STEPS (DAW mode: the pads' bank A / B) |
 | < + > (SMK-37) | SYNTH ↔ DAW mode |
 | PATCH held + OCTAVE+ (SMK-37, DAW mode) | the DAW map editor |
 
