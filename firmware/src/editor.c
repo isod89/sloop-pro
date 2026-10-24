@@ -808,6 +808,10 @@ UI_SMALL static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes b
         ed_b(a[0]);
         ed_b(a[1] & 3u);
         ed_b(project_used(a[1] & 3u));
+#if BOARD_SMK37
+        if (a[0] == 1u)                               /* SLOOP Pro: the save's status, 0 written, 2 the flash failed */
+            ed_b(proj_save_err ? 2u : 0u);
+#endif
         break;
     case ED_NAMES:                                         /* preset names of an engine */
         if (na < 1u || a[0] >= NENGINES)

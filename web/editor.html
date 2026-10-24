@@ -1519,7 +1519,8 @@ const parse = {
   },
   [CMD.STEP_SET](a) { return parse[CMD.STEP_GET](a); },
   [CMD.PRESET](a) { const r = new Reader(a); return { engine: r.b(), preset: r.b() }; },
-  [CMD.PROJECT](a) { const r = new Reader(a); return { op: r.b(), slot: r.b(), used: r.b(), busy: a.length > 3 && a[3] === 1 }; },
+  [CMD.PROJECT](a) { const r = new Reader(a); return { op: r.b(), slot: r.b(), used: r.b(), busy: a.length > 3 && a[3] === 1,
+    flashFailed: a.length > 3 && a[3] === 2 }; },   /* (SLOOP Pro: a save the flash did not take) */
   [CMD.NAMES](a) {
     const r = new Reader(a);
     const o = { engine: r.b(), names: [] };
@@ -6750,6 +6751,7 @@ async function project(op, slot) {
     if (!op) selfLoad();
     const r = parse[CMD.PROJECT](await rq(req.project(op, slot), { timeout: 4000, retries: 0 }));
     if (r.busy) throw new Error("Stop playback before loading or saving a section.");
+    if (r.flashFailed) throw new Error("The keyboard could not write its flash: the section was NOT saved (it keeps what was saved before).");
     dev.slotUsed[slot] = r.used;
     renderSlots();
     if (!op && r.used) await afterSoundChange();

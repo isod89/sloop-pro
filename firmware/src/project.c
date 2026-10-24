@@ -579,6 +579,9 @@ UI_SMALL static void proj_fetch(uint32_t slot)
 #endif
 
 static const char *const SEC_NAME[4] = {"A", "B", "C", "D"};   /* (2.7: the slots named as the song's sections) */
+#if BOARD_SMK37
+static uint8_t proj_save_err;                   /* SLOOP Pro: the last project_save could not write the flash (editor.c) */
+#endif
 UI_SMALL static void project_save(uint32_t slot)
 {
     project_t *p = &proj_slot[slot & 3u];
@@ -588,10 +591,22 @@ UI_SMALL static void project_save(uint32_t slot)
     proj_capture(p);
 #if FELUCCA_FLASH
     if (flash_ok) {
+#if BOARD_SMK37
+        /* SLOOP Pro (after ChanceTheMaker's sloop-smk): a save the flash did not take leaves the section as the flash
+         * has it, so what the slot shows is what a restart finds; the editor is told (editor.c ED_PROJECT, status 2) */
+        proj_save_err = 0;
+        if (st_save(OBJ_PROJECT0 + (slot & 3u), p, sizeof *p)) {
+            proj_save_err = 1;
+            proj_fetch(slot);
+            ui_message("NOT SAVED: FLASH ERROR");
+        } else
+            ui_say("SAVED SECTION ", SEC_NAME[slot & 3u]);
+#else
         if (st_save(OBJ_PROJECT0 + (slot & 3u), p, sizeof *p))
             ui_message("SAVE ERROR");
         else
             ui_say("SAVED SECTION ", SEC_NAME[slot & 3u]);
+#endif
         return;
     }
 #endif
