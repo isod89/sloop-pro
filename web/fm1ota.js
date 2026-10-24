@@ -23,6 +23,21 @@ export const OTHER_SMK = (id) => /^(ota-)?SMK-37_9\d\d$/i.test(id.text);
 // another device
 const SMK_FAMILY = /^(ota-)?(SMK-37([ +].*)?|MKE-P37|STARRYKEY-37.*)$/i;
 export const sameKeyboard = (a, b) => a === b || (SMK_FAMILY.test(a) && SMK_FAMILY.test(b));   // two models
+// SLOOP Pro: one package per model (SMK-37 Pro, SMK-37 Elite, MKE-P37). The one for the connected keyboard, from its
+// identity (running, or its update loader's): the same model by name -> { product, anyModel: false }; a Starrykey 37
+// Play or an SMK-37 that does not name its model ("SMK-37+VA") -> the SMK-37 Pro one, { anyModel: true }; an FM-1,
+// another device or ChanceTheMaker's SMK firmwares ("SMK-37_9NN", their own updater) -> null (as fm1_install.py
+// pick_package)
+export function pickPackage(deviceText, products) {
+  if (OTHER_SMK({ text: deviceText })) return null;
+  const dm = deviceText.split("_")[0].replace(/^ota-/i, "").toLowerCase();
+  const same = products.find((p) => p.split("_")[0].toLowerCase() === dm);
+  if (same) return { product: same, anyModel: false };
+  const kin = products.filter((p) => sameKeyboard(dm.toUpperCase(), p.split("_")[0]));
+  const pro = kin.find((p) => /^SMK-37 Pro_/i.test(p));
+  if (pro) return { product: pro, anyModel: true };
+  return kin.length === 1 ? { product: kin[0], anyModel: true } : null;
+}
 // an official package on the connected keyboard (the return to the M-Vave firmware): "same" (its model), "other"
 // (another model of the same keyboard: allowed, the page warns), "unknown" (the keyboard does not name its model,
 // as "SMK-37" or "SMK-37+VA": allowed, the page warns), "refuse" (another device: FM-1 and SMK never mix)

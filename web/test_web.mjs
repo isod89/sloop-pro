@@ -17,7 +17,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 import { blockCount, logicalImage, productOf, validateStockPackage, identifyStockPackage, STOCK_SMK } from "./fm1pkg.js";
-import { Updater, pack7, unpack7, sameKeyboard, OUR_LOADER, OTHER_SMK, PORT_RE, stockFit, packageBoard, isStockPackage, regionTable, FM1_STOCK_MSG } from "./fm1ota.js";
+import { Updater, pack7, unpack7, sameKeyboard, OUR_LOADER, OTHER_SMK, PORT_RE, FM1_PORT, pickPackage, stockFit, packageBoard, isStockPackage, regionTable, FM1_STOCK_MSG } from "./fm1ota.js";
 
 let failed = 0;
 const ok = (cond, what) => { console.log(`${what.padEnd(64)} ${cond ? "ok" : "FAIL"}`); if (!cond) failed++; };
@@ -1723,7 +1723,8 @@ async function updater() {
   {   /* the same loader, but the device is already stuck in update mode: resume must find it too */
     const win2 = new FakeFM1(image, { loaderName: "USB MIDI Device" });
     win2.boot("ota-FM-1_900", "USB MIDI Device");
-    const done = await new Updater(win2.access).resume(image);
+    const done = await new Updater(win2.access).resume(image, null, { package: "FM-1_900" });   /* (the layer: nothing
+                                                        written without the package's identity) */
     ok(done === true && win2.bad === 0, "fm1ota.js: resume finds a generically-named loader already in update mode");
   }
 

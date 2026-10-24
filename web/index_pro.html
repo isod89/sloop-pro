@@ -1,0 +1,377 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-only
+     Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
+     SLOOP Pro installer: SLOOP on the M-Vave SMK-37 (Pro, Elite, MKE-P37, Starrykey 37 Play). web/make_site.py --pro
+     inlines fm1pkg.js, fm1ota.js and the packages' metadata (one package per model) -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SLOOP Pro installer</title>
+<!--PWA--><link rel="manifest" href="../sloop.webmanifest"><meta name="theme-color" content="#000000"><link rel="icon" href="../icon-192.png"><!--/PWA-->
+<style>
+  :root { --bg: #000; --fg: #f2f2f2; --dim: #8a8a92; --tile: #16161a; --line: #2a2a30;
+          --blue: #287cff; --green: #1ecc70; --yellow: #ffc618; --orange: #ff621a; --red: #ff2c34; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+         font: 15px/1.6 "Helvetica Neue", -apple-system, BlinkMacSystemFont, Arial, sans-serif; }
+  main { max-width: 600px; margin: 0 auto; padding: 32px 16px 48px; }
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo svg { display: block; width: 200px; height: auto; }
+  .logo rect:first-child { fill: transparent; }
+  .badge { font-weight: 700; letter-spacing: .14em; color: var(--orange); border: 2px solid var(--orange);
+           padding: 2px 8px; font-size: 18px; line-height: 1.2; }
+  .langs { display: flex; gap: 10px; }
+  .lang { font-size: 12px; color: var(--dim); cursor: pointer; text-decoration: underline; background: none;
+          border: 0; padding: 0; }
+  .lang[aria-current="true"] { color: var(--fg); text-decoration: none; }
+  .strip { display: flex; height: 4px; margin: 20px 0 24px; }
+  .strip i { flex: 1; } .strip i:nth-child(1) { background: var(--blue); } .strip i:nth-child(2) { background: var(--green); }
+  .strip i:nth-child(3) { background: var(--yellow); } .strip i:nth-child(4) { background: var(--orange); }
+  h1 { font-size: 13px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin: 0 0 8px; }
+  h2 { font-size: 15px; margin: 26px 0 8px; }
+  .lead { font-size: 20px; line-height: 1.35; margin: 0 0 24px; }
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 0 0 28px; }
+  .tile { background: var(--tile); padding: 10px 10px 12px; border-top: 3px solid var(--c); min-height: 92px; }
+  .tile b { display: block; font-size: 22px; font-weight: 600; color: var(--c); line-height: 1.1; }
+  .tile span { display: block; font-size: 12px; color: var(--dim); margin-top: 4px; }
+  p { margin: 0 0 14px; }
+  ol { margin: 0 0 14px; padding-left: 22px; }
+  fieldset { border: 1px solid var(--line); padding: 10px 12px; margin: 0 0 16px; }
+  legend { font-size: 12.5px; color: var(--dim); padding: 0 4px; }
+  label.m { display: inline-flex; align-items: center; gap: 6px; margin: 2px 14px 2px 0; cursor: pointer; }
+  label.ck { display: flex; gap: 8px; align-items: flex-start; margin: 0 0 14px; cursor: pointer; }
+  button#go { font: 600 15px/1 inherit; font-family: inherit; background: var(--orange); color: #000; border: 0;
+              padding: 16px 0; width: 100%; cursor: pointer; letter-spacing: .08em; text-transform: uppercase; }
+  button#go:disabled { background: var(--tile); color: var(--dim); cursor: default; }
+  #status { margin-top: 14px; min-height: 1.6em; font-variant-numeric: tabular-nums; }
+  #status.bad { color: var(--red); } #status.good { color: var(--green); }
+  #device { color: var(--dim); font-size: 13px; min-height: 1.4em; }
+  .small { color: var(--dim); font-size: 12.5px; }
+  .small a, a { color: inherit; }
+  progress { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; margin-top: 16px; border: 0; background: var(--tile); }
+  progress::-webkit-progress-bar { background: var(--tile); }
+  progress::-webkit-progress-value { background: var(--orange); }
+  progress::-moz-progress-bar { background: var(--orange); }
+  pre { color: var(--dim); font-size: 11px; white-space: pre-wrap; margin-top: 12px; max-height: 180px; overflow: auto; }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 28px 0 18px; }
+  [hidden] { display: none !important; }
+  .ed { display: inline-block; margin: 8px 8px 0 0; padding: 10px 14px; background: var(--tile); text-decoration: none;
+        font: inherit; color: var(--fg); border: 0; cursor: pointer; }
+  @media (max-width: 440px) { .tiles { grid-template-columns: repeat(2, 1fr); } .logo svg { width: 150px; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="top"><div class="logo"><!--LOGO--><span class="badge">PRO</span></div>
+    <div class="langs"><button class="lang" data-l="fr">français</button><button class="lang" data-l="en">english</button><button class="lang" data-l="ja">日本語</button></div></div>
+  <div class="strip"><i></i><i></i><i></i><i></i></div>
+  <!--BANNER-->
+  <h1 data-t="h1"></h1>
+  <p class="lead" data-t="lead"></p>
+  <div class="tiles">
+    <div class="tile" style="--c: var(--blue)"><b>37</b><span data-t="t1"></span></div>
+    <div class="tile" style="--c: var(--green)"><b>16</b><span data-t="t2"></span></div>
+    <div class="tile" style="--c: var(--yellow)"><b>4</b><span data-t="t3"></span></div>
+    <div class="tile" style="--c: var(--orange)"><b>DAW</b><span data-t="t4"></span></div>
+  </div>
+  <h2 data-t="before"></h2>
+  <ol><li data-t="b1"></li><li data-t="b2"></li><li data-t="b3"></li></ol>
+  <fieldset>
+    <legend data-t="modelL"></legend>
+    <label class="m"><input type="radio" name="model" value="auto" checked> <span data-t="auto"></span></label>
+    <label class="m"><input type="radio" name="model" value="SMK-37 Pro"> SMK-37 Pro / Starrykey 37 Play</label>
+    <label class="m"><input type="radio" name="model" value="SMK-37 Elite"> SMK-37 Elite</label>
+    <label class="m"><input type="radio" name="model" value="MKE-P37"> MKE-P37</label>
+  </fieldset>
+  <label class="ck"><input type="checkbox" id="risk"> <span data-t="risk"></span></label>
+  <p><button id="go" disabled data-t="install"></button></p>
+  <p id="device"></p>
+  <progress id="bar" max="100" value="0"></progress>
+  <p id="status"></p>
+  <pre id="log"></pre>
+  <a class="ed" href="../editor/" data-t="editor"></a>
+  <a class="ed" href="../editor/sloop-editor.html" download="sloop-editor.html" data-t="edOffline"></a>
+  <button id="app" class="ed" hidden data-t="appInstall"></button>
+  <hr>
+  <h2 data-t="backT"></h2>
+  <p class="small" data-t="back"></p>
+  <p class="small"><a href="https://www.m-vave.com/download" target="_blank" rel="noopener">www.m-vave.com/download</a></p>
+  <h2 data-t="rescueT"></h2>
+  <p class="small" data-t="rescue"></p>
+  <p class="small" data-t="other2"></p>
+  <hr>
+  <p class="small">SLOOP Pro: SLOOP by isod89 on the M-Vave SMK-37, with the SMK-37 board layer by genkigenki. SLOOP is based on
+    Felucca by Leo Kuroshita (@kurogedelic), <a href="https://hugelton.com" target="_blank" rel="noopener">Hügelton Instruments</a>.<br>
+    Font: Terminus (Dimitar Toshkov Zhekov, SIL OFL 1.1). Samples: Versilian Studios VSCO-2 Community Edition and VCSL (CC0 1.0), and the Hügelton Sample Pack (© Hügelton Instruments, not CC0).<br>
+    M-VAVE, SMK-37, MKE-P37 and Starrykey are trademarks of their respective owners; SLOOP Pro is not affiliated with them.<br>
+    <span data-t="license"></span> <a href="https://github.com/isod89/sloop-pro" target="_blank" rel="noopener">github.com/isod89/sloop-pro</a></p>
+</main>
+<script type="module">
+/*LIB*/
+const $ = (id) => document.getElementById(id);
+const TEXT = {
+  fr: {
+    h1: "Firmware pour le clavier M-VAVE SMK-37",
+    lead: "SLOOP Pro : la groovebox SLOOP sur le SMK-37. Quatre pistes (trois synthés et une boîte à rythmes), 12 moteurs, 153 sons, 37 kits, 27 effets punch-in — avec 37 touches dynamiques, 16 pads RGB, 4 faders, 8 encodeurs, les molettes et un mode DAW.",
+    t1: "touches dynamiques, + 10 notes ou drums", t2: "pads RGB : pas, sons, kit", t3: "faders : niveau, filtre, reverb, delay", t4: "mode contrôleur MIDI",
+    before: "Avant d'installer",
+    b1: "Branchez le clavier directement à l'ordinateur avec un câble USB de données. Chrome ou Edge.",
+    b2: "Fermez les autres applications et onglets qui utilisent le MIDI (DAW, éditeurs, M-UPGRADE).",
+    b3: "Sauvegarde conseillée : une copie complète de la flash (1 Mo) avant la première installation (voir SLOOP-PRO.md, Sécurité). Le firmware n'écrit jamais l'étalonnage de l'usine ni la zone d'origine.",
+    modelL: "Modèle", auto: "Automatique (recommandé)",
+    risk: "J'ai compris : firmware non officiel, sans garantie, installé à mes risques. Je ne débranche pas le câble pendant l'écriture.",
+    install: "Installer SLOOP Pro",
+    editor: "Éditeur (sons, séquences, carte DAW, sauvegardes)", edOffline: "Télécharger l'éditeur (hors ligne)",
+    appInstall: "Installer l'application (éditeur et installateur hors ligne)",
+    backT: "Revenir au firmware M-VAVE",
+    back: "Sauvegardez d'abord vos projets avec l'éditeur (Projets → Sauvegarde). Dans l'éditeur, onglet Réglages : « Préparer le retour à M-Vave ». Puis installez le firmware officiel de votre modèle avec M-UPGRADE, l'outil officiel de M-VAVE. SLOOP Pro ne touche pas à l'étalonnage : le clavier revient comme avant.",
+    rescueT: "Si quelque chose tourne mal",
+    rescue: "Si l'écriture s'arrête : rebranchez le câble et appuyez de nouveau sur Installer — le clavier reste en mode mise à jour et l'écriture reprend. Si SLOOP Pro ne démarre pas : maintenez OCTAVE− à l'allumage (SLOOP PRO USB RESCUE) puis installez à nouveau.",
+    other2: "Clavier sous le firmware « Sloop SMK » de ChanceTheMaker (identité SMK-37_9xx) ? Il n'accepte que ses propres paquets : revenez d'abord au firmware M-VAVE (sa page de restauration ou M-UPGRADE), puis installez SLOOP Pro.",
+    nomidi: "Ce navigateur ne peut pas le faire. Ouvrez la page dans Chrome ou Edge.", loadfail: "Chargement impossible : ",
+    ready: "Prêt : SLOOP Pro ", start: "Démarrage", verify: "Vérification", loader: "Passage en mode mise à jour", write: "Écriture",
+    reboot: "Redémarrage", done: "Terminé : le clavier tourne ", stopped: "Arrêté. Rebranchez le câble USB et appuyez de nouveau sur Installer.",
+    error: "Erreur : ", needRisk: "Cochez d'abord la case ci-dessus.",
+    denied: "L'accès MIDI (SysEx) a été refusé. Autorisez le MIDI dans les paramètres du site (barre d'adresse) et réessayez.",
+    notfound: "Clavier introuvable. Vérifiez le câble USB (un câble de données), fermez les autres applications MIDI, et réessayez.",
+    other: "Ce clavier tourne sous un firmware SMK de ChanceTheMaker (Felucca SMK, Sloop SMK, Melodee SMK, Doom), qui n'accepte que ses propres paquets. Rien n'a été écrit. Revenez d'abord au firmware M-VAVE, puis installez SLOOP Pro.",
+    fm1: "L'appareil branché est un FM-1. SLOOP Pro est pour le SMK-37 ; pour le FM-1, utilisez SLOOP (isod89.github.io/sloop-fm1). Rien n'a été écrit.",
+    nopkg: "Aucun paquet SLOOP Pro pour cet appareil : ",
+    model: "Le modèle ne correspond pas : ",
+    lost: "La connexion USB a été perdue. Rebranchez et réessayez.",
+    noloader: "Le clavier en mode mise à jour est introuvable. Rebranchez le câble USB et appuyez de nouveau sur Installer (il reste en mode mise à jour jusqu'à la fin).",
+    noreturn: "Le clavier n'est pas revenu. Éteignez-le et rallumez-le.",
+    mismatch: "Écrit, mais le clavier annonce une autre version : ",
+    foreign: "Le clavier est en mode mise à jour d'un autre firmware. Terminez cette mise à jour avec son propre outil (M-UPGRADE), puis réessayez : ",
+    badreq: "Le clavier a demandé des données hors du paquet : arrêté. Rechargez la page et réessayez : ",
+    fm1confirm: "Ce paquet est pour le FM-1 : rien n'a été écrit.",
+    fm1pkg: "Ce paquet est pour le FM-1 : rien n'a été écrit.", board: "Ce paquet n'est pas pour cette carte : rien n'a été écrit.",
+    badpkg: "Le fichier à installer est endommagé. Rechargez la page.",
+    leave: "Écriture en cours. Ne fermez pas la page.",
+    device: "Appareil : ", pkgFor: " → paquet ",
+    license: "GPL-3.0, sans garantie. Source :",
+  },
+  en: {
+    h1: "Firmware for the M-VAVE SMK-37 keyboard",
+    lead: "SLOOP Pro: the SLOOP groovebox on the SMK-37. Four tracks (three synths and a drum machine), 12 engines, 153 sounds, 37 kits, 27 punch-in effects — with 37 velocity keys, 16 RGB pads, 4 faders, 8 knobs, the wheels and a DAW mode.",
+    t1: "velocity keys, + 10 notes or drums", t2: "RGB pads: steps, sounds, kit", t3: "faders: level, filter, reverb, delay", t4: "MIDI controller mode",
+    before: "Before you install",
+    b1: "Connect the keyboard straight to the computer with a USB data cable. Chrome or Edge.",
+    b2: "Close the other apps and tabs that use MIDI (DAWs, editors, M-UPGRADE).",
+    b3: "Recommended: a full 1 MiB flash backup before the first install (SLOOP-PRO.md, Safety). The firmware never writes the factory calibration or the stock area.",
+    modelL: "Model", auto: "Automatic (recommended)",
+    risk: "I understand: unofficial firmware, no warranty, installed at my own risk. I will not unplug the cable while it writes.",
+    install: "Install SLOOP Pro",
+    editor: "Editor (sounds, sequences, DAW map, backups)", edOffline: "Download the editor (offline)",
+    appInstall: "Install the app (the editor and the installer offline)",
+    backT: "Back to the M-VAVE firmware",
+    back: "First back up your projects with the editor (Projects → Backup). In the editor's Settings tab: “Prepare the return to M-Vave”. Then install your model's official firmware with M-UPGRADE, M-VAVE's own updater. SLOOP Pro never touches the calibration: the keyboard comes back as it was.",
+    rescueT: "If something goes wrong",
+    rescue: "If the write stops: replug the cable and press Install again — the keyboard stays in update mode and the write resumes. If SLOOP Pro does not start: hold OCTAVE− while switching on (SLOOP PRO USB RESCUE), then install again.",
+    other2: "Keyboard running ChanceTheMaker's “Sloop SMK” (identity SMK-37_9xx)? It takes only its own packages: go back to the M-VAVE firmware first (its restore page or M-UPGRADE), then install SLOOP Pro.",
+    nomidi: "This browser cannot do it. Open the page in Chrome or Edge.", loadfail: "Could not load: ",
+    ready: "Ready: SLOOP Pro ", start: "Starting", verify: "Verifying", loader: "Switching to update mode", write: "Writing",
+    reboot: "Restarting", done: "Done: the keyboard runs ", stopped: "Stopped. Replug the USB cable and press Install again.",
+    error: "Error: ", needRisk: "Tick the box above first.",
+    denied: "MIDI (SysEx) access was not allowed. Allow MIDI in the site settings (address bar) and try again.",
+    notfound: "Keyboard not found. Check the USB cable (a data cable), close other apps that use MIDI, and try again.",
+    other: "This keyboard runs one of ChanceTheMaker's SMK firmwares (Felucca SMK, Sloop SMK, Melodee SMK, Doom), which take only their own packages. Nothing was written. Go back to the M-VAVE firmware first, then install SLOOP Pro.",
+    fm1: "The connected device is an FM-1. SLOOP Pro is for the SMK-37; for the FM-1 use SLOOP (isod89.github.io/sloop-fm1). Nothing was written.",
+    nopkg: "No SLOOP Pro package for this device: ",
+    model: "The model does not match: ",
+    lost: "The USB connection was lost. Replug it and try again.",
+    noloader: "The keyboard in update mode was not found. Replug the USB cable and press Install again (it stays in update mode until it is finished).",
+    noreturn: "The keyboard did not come back. Switch it off and on.",
+    mismatch: "Written, but the keyboard reports another version: ",
+    foreign: "The keyboard is in the update mode of another firmware. Finish that update with its own updater (M-UPGRADE), then try again: ",
+    badreq: "The keyboard asked for data outside the package: stopped. Reload the page and try again: ",
+    fm1confirm: "This package is for the FM-1: nothing was written.",
+    fm1pkg: "This package is for the FM-1: nothing was written.", board: "This package is not for this board: nothing was written.",
+    badpkg: "The file to install is damaged. Reload the page.",
+    leave: "Writing. Do not close the page.",
+    device: "Device: ", pkgFor: " → package ",
+    license: "GPL-3.0, no warranty. Source:",
+  },
+  ja: {
+    h1: "M-VAVE SMK-37 キーボード用ファームウェア",
+    lead: "SLOOP Pro：SMK-37 で動く SLOOP グルーヴボックス。4 トラック（シンセ 3＋ドラム）、12 エンジン、153 音色、37 キット、27 のパンチイン FX。ベロシティ付き 37 鍵、RGB パッド 16、フェーダー 4、ノブ 8、ホイール、DAW モード。",
+    t1: "ベロシティ鍵盤、＋10 鍵はノートかドラム", t2: "RGB パッド：ステップ・音色・キット", t3: "フェーダー：音量・フィルター・リバーブ・ディレイ", t4: "MIDI コントローラーモード",
+    before: "インストールの前に",
+    b1: "キーボードを USB データケーブルでパソコンに直接つないでください。Chrome か Edge。",
+    b2: "MIDI を使う他のアプリやタブ（DAW、エディタ、M-UPGRADE）を閉じてください。",
+    b3: "初回の前に 1 MiB のフラッシュ全体のバックアップをおすすめします（SLOOP-PRO.md、安全）。このファームウェアは工場のキャリブレーションや純正領域を書き換えません。",
+    modelL: "モデル", auto: "自動（おすすめ）",
+    risk: "非公式・無保証のファームウェアを自己責任で入れることを理解しました。書き込み中はケーブルを抜きません。",
+    install: "SLOOP Pro をインストール",
+    editor: "エディタ（音色、シーケンス、DAW マップ、バックアップ）", edOffline: "エディタをダウンロード（オフライン）",
+    appInstall: "アプリとしてインストール（エディタとインストーラーがオフラインで使える）",
+    backT: "M-VAVE のファームウェアに戻す",
+    back: "まずエディタでプロジェクトをバックアップ（Projects → Backup）。エディタの Settings で「Prepare the return to M-Vave」。そのあと M-VAVE 公式のアップデーター M-UPGRADE でモデルの公式ファームウェアを入れてください。キャリブレーションはそのままです。",
+    rescueT: "うまくいかないとき",
+    rescue: "書き込みが止まったら：ケーブルを挿し直して、もう一度インストールを押してください（書き込みモードのまま再開します）。起動しないとき：OCTAVE− を押しながら電源を入れ（SLOOP PRO USB RESCUE）、もう一度インストール。",
+    other2: "ChanceTheMaker の「Sloop SMK」（SMK-37_9xx）が入っている場合：その専用パッケージしか受け付けません。先に M-VAVE のファームウェアに戻してから SLOOP Pro を入れてください。",
+    nomidi: "このブラウザでは使えません。Chrome か Edge で開いてください。", loadfail: "読み込めませんでした: ",
+    ready: "準備完了：SLOOP Pro ", start: "開始します", verify: "確認中", loader: "書き込みモードに切り替え中", write: "書き込み中",
+    reboot: "再起動中", done: "完了：", stopped: "途中で止まりました。USB を挿し直してもう一度押してください。",
+    error: "エラー: ", needRisk: "先に上のチェックを入れてください。",
+    denied: "MIDI（SysEx）の使用が許可されませんでした。サイト設定で MIDI を許可して、もう一度押してください。",
+    notfound: "キーボードが見つかりません。USB ケーブルを確かめ、MIDI を使う他のアプリを閉じてから、もう一度押してください。",
+    other: "このキーボードは ChanceTheMaker の SMK ファームウェアで動いています。専用パッケージしか受け付けないため、何も書き込んでいません。先に M-VAVE のファームウェアに戻してください。",
+    fm1: "接続されているのは FM-1 です。SLOOP Pro は SMK-37 用です。FM-1 には SLOOP（isod89.github.io/sloop-fm1）を。何も書き込んでいません。",
+    nopkg: "この機器用の SLOOP Pro パッケージがありません: ",
+    model: "モデルが合いません: ",
+    lost: "USB の接続が切れました。挿し直してもう一度押してください。",
+    noloader: "書き込みモードのキーボードが見つかりません。USB を挿し直してもう一度押してください。",
+    noreturn: "キーボードが戻ってきません。電源を入れ直してください。",
+    mismatch: "書き込みは終わりましたが、別のバージョンを報告しています: ",
+    foreign: "キーボードは別のファームウェアの書き込みモードです。そのアップデーター（M-UPGRADE）で終えてから、もう一度: ",
+    badreq: "キーボードがパッケージ外のデータを要求しました。止めました。再読み込みしてもう一度: ",
+    fm1confirm: "これは FM-1 用のパッケージです。何も書き込んでいません。",
+    fm1pkg: "これは FM-1 用のパッケージです。何も書き込んでいません。", board: "このボード用のパッケージではありません。何も書き込んでいません。",
+    badpkg: "インストールするファイルが壊れています。ページを再読み込みしてください。",
+    leave: "書き込み中です。ページを閉じないでください。",
+    device: "機器: ", pkgFor: " → パッケージ ",
+    license: "GPL-3.0、無保証。ソース:",
+  },
+};
+const pickLang = () => { const l = (navigator.language || "en").toLowerCase(); return l.startsWith("fr") ? "fr" : l.startsWith("ja") ? "ja" : "en"; };
+let lang = pickLang();
+try { lang = localStorage.getItem("sloop-pro-lang") || lang; } catch (_) {}
+const t = (k) => (TEXT[lang] && TEXT[lang][k]) ?? TEXT.en[k] ?? k;
+let lastKey = null, lastArg = "", lastCls = "";
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-t]").forEach((e) => { e.textContent = t(e.dataset.t); });
+  document.querySelectorAll(".lang").forEach((b) => b.setAttribute("aria-current", String(b.dataset.l === lang)));
+  if (lastKey) setStatus(t(lastKey) + lastArg, lastCls);
+}
+document.querySelectorAll(".lang").forEach((b) => b.addEventListener("click", () => {
+  lang = b.dataset.l;
+  try { localStorage.setItem("sloop-pro-lang", lang); } catch (_) {}
+  applyLang();
+}));
+applyLang();
+if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol))
+  navigator.serviceWorker.register("../sw.js").catch(() => {});
+{
+  let ask = null;
+  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); ask = e; $("app").hidden = false; });
+  window.addEventListener("appinstalled", () => { ask = null; $("app").hidden = true; });
+  $("app").addEventListener("click", async () => {
+    if (!ask) return;
+    ask.prompt();
+    await ask.userChoice.catch(() => {});
+    ask = null;
+    $("app").hidden = true;
+  });
+}
+function setStatus(txt, cls = "") { $("status").textContent = txt; $("status").className = cls; }
+const sayK = (k, arg = "", cls = "") => { lastKey = k; lastArg = arg; lastCls = cls; setStatus(t(k) + arg, cls); };
+const log = (s) => { $("log").textContent += s + "\n"; $("log").scrollTop = 1e9; };
+const meta = /*META*/;   // { version, pkgs: [{ product, pkg, sha256 }] }: one package per model
+const images = new Map();                          // product -> logical image
+let writing = false;
+const lockAll = (on) => {
+  writing = on;
+  $("go").disabled = on || !images.size;
+  document.querySelectorAll("input").forEach((i) => { i.disabled = on; });
+};
+window.addEventListener("beforeunload", (e) => { if (writing) { e.preventDefault(); e.returnValue = t("leave"); } });
+
+(async () => {
+  if (!navigator.requestMIDIAccess) { sayK("nomidi", "", "bad"); return; }
+  try {
+    /* never the browser's old copy: no-cache asks the server first, a mismatch is fetched once more past the cache;
+       a package whose SHA-256 or identity is not the one this page was made with is never offered */
+    const sha = async (b) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b))].map((x) => x.toString(16).padStart(2, "0")).join("");
+    const check = self.crypto && crypto.subtle;
+    for (const p of meta.pkgs) {
+      const get = async (cache) => {
+        const r = await fetch(p.pkg, { cache });
+        if (!r.ok) throw new Error(`${p.pkg}: HTTP ${r.status}`);
+        return new Uint8Array(await r.arrayBuffer());
+      };
+      let pkg = await get("no-cache");
+      if (check && (await sha(pkg)) !== p.sha256) pkg = await get("reload");
+      if (productOf(pkg) !== p.product) { sayK("badpkg", ` (${p.product})`, "bad"); return; }
+      if (check) {
+        const h = await sha(pkg);
+        if (h !== p.sha256) { sayK("badpkg", ` (${p.product})`, "bad"); log(`${p.product}: sha256 ${h}, expected ${p.sha256}`); return; }
+      }
+      images.set(p.product, logicalImage(pkg));
+    }
+    sayK("ready", `${meta.version} (${[...images.keys()].map((k) => k.split("_")[0]).join(", ")})`);
+    lockAll(writing);
+  } catch (e) { sayK("loadfail", e.message, "bad"); }
+})();
+
+let total = 74 + 1256;                             /* reads: step 1, step 2 (head + the SMK-37's app area) */
+const step = (k, a) => {
+  log(`${k} ${a ?? ""}`);
+  if (k === "start") sayK("start");
+  if (k === "verify") { sayK("verify"); $("bar").value = Math.min(100, (a / total) * 100); }
+  if (k === "loader") sayK("loader");
+  if (k === "write") { sayK("write"); $("bar").value = Math.min(100, ((74 + a) / total) * 100); }
+  if (k === "reboot") sayK("reboot");
+  if (k === "done") { $("bar").value = 100; sayK("done", a || "", "good"); }
+};
+const failed = (e) => {
+  if (e && e.code && TEXT.en[e.code]) sayK(e.code, e.code === "other" || e.code === "fm1" ? "" : e.detail || "", "bad");
+  else sayK("error", e && e.message, "bad");
+  log(String(e && e.stack || e));
+};
+const pfail = (code, detail = "") => { const e = new Error(code); e.code = code; e.detail = detail; return e; };
+const model = () => document.querySelector('input[name="model"]:checked').value;
+/* the package for this device: by its identity (Automatic), or the model ticked (another model of the same keyboard
+   only: install() and resume() refuse an FM-1 or another device whatever is ticked) */
+function choose(idText) {
+  if (OTHER_SMK({ text: idText })) throw pfail("other");
+  const dm = idText.split("_")[0].replace(/^ota-/i, "");
+  if (/^FM-1$/i.test(dm)) throw pfail("fm1");
+  const products = [...images.keys()];
+  if (model() !== "auto") {
+    const p = products.find((x) => x.split("_")[0] === model());
+    if (!p) throw pfail("nopkg", model());
+    return { product: p, anyModel: true };
+  }
+  const c = pickPackage(idText, products);
+  if (!c) throw pfail("nopkg", idText);
+  return c;
+}
+
+$("go").addEventListener("click", async () => {
+  if (writing) return;
+  if (!$("risk").checked) { sayK("needRisk", "", "bad"); return; }
+  lockAll(true);
+  $("bar").value = 0;
+  let midi;
+  try { midi = await navigator.requestMIDIAccess({ sysex: true }); }
+  catch (e) { sayK("denied", "", "bad"); lockAll(false); return; }
+  try {
+    const up = new Updater(midi, log);
+    const ota = await up.find((id) => /^ota-/i.test(id.model), true);   /* left in update mode: the write resumes */
+    const dev = ota || await up.find((id) => !/^ota-/i.test(id.model));
+    if (!dev) throw pfail("notfound", up.seen());
+    dev.link.close();
+    const c = choose(dev.id.text);
+    const image = images.get(c.product);
+    total = 74 + Math.ceil(image.length / 512);
+    $("device").textContent = t("device") + dev.id.text + t("pkgFor") + c.product;
+    if (ota) {                                     /* the write finished, then the keyboard is checked as install() does */
+      if (!(await up.resume(image, step, { package: c.product, anyModel: c.anyModel }))) throw pfail("stopped");
+      step("reboot");
+      await new Promise((r) => setTimeout(r, 3000));
+      const back = await up.waitFor((id) => !/^ota-/i.test(id.model), 60000);
+      if (!back) throw pfail("noreturn");
+      back.link.close();
+      if (back.id.text !== c.product) throw pfail("mismatch", back.id.text);
+      step("done", back.id.text);
+    } else await up.install(image, c.product, step, c.anyModel);
+  } catch (e) { failed(e); }
+  lockAll(false);
+});
+</script>
+</body>
+</html>
