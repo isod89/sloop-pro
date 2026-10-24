@@ -8,12 +8,13 @@
 Outputs in build/: felucca.bin (app), loader/ota.bin (update loader),
 felucca.fwsc (package). See BUILDING.md for the toolchain and the SDK.
 
-BOARD=smk37 (or --board smk37) builds for the M-Vave SMK-37 Pro: -DBOARD_SMK37=1 for the app and the
-loader, identity SMK-37 Pro_900 (release SMK-37 Pro_9XY), the SMK flash layout (fm1pkg_make.py), and
-the package build/sloop-smk37.fwsc (sloop-smk37-X.Y.fwsc for a release). The default stays the FM-1.
+BOARD=smk37 (or --board smk37) builds SLOOP Pro for the M-Vave SMK-37 Pro: -DBOARD_SMK37=1 for the app and
+the loader, identity SMK-37 Pro_900 (release SMK-37 Pro_9XY), the SMK flash layout (fm1pkg_make.py), and
+the package build/sloop-pro.fwsc (sloop-pro-X.Y.fwsc for a release). Without BOARD: the FM-1 (SLOOP, the
+reference build the host tests use; build.sh builds both).
 MODEL=elite / mke (or --model) with smk37: the same build under the SMK-37 Elite's or the MKE-P37's model
 name (identity SMK-37 Elite_900 / MKE-P37_900, the loader's and the update record's name too; -DSMK_MODEL),
-so M-Vave's updater still takes that unit's factory package; build/sloop-smk37-elite.fwsc, -mke.fwsc.
+so M-Vave's updater still takes that unit's factory package; build/sloop-pro-elite.fwsc, -mke.fwsc.
 
 The JieLi toolchain is Linux x86-64 only. JIELI_TOOLCHAIN points at it; on
 macOS (or with JIELI_DOCKER=1) each tool runs in a linux/amd64 container.
@@ -354,7 +355,7 @@ def main():
         raise SystemExit(f"MODEL={model}: pro, elite or mke, with BOARD=smk37")
     fm1pkg_make.set_board(BOARD)
     APP_SLOT = fm1pkg_make.APP_SLOT
-    stem = "felucca" if BOARD == "fm1" else "sloop-" + BOARD
+    stem = "felucca" if BOARD == "fm1" else "sloop-pro"   # SLOOP Pro: the SMK-37 build
     PRODUCT = fm1pkg_make.BOARDS[BOARD][2]
     if model != "pro":              # another model name: identity, loader and update record (fm1_cc.h SMK_MODEL)
         BOARD_DEFS[BOARD] = [*BOARD_DEFS[BOARD], f'-DSMK_MODEL="{MODELS[model]}"']
@@ -368,6 +369,8 @@ def main():
             raise SystemExit(f"--release {a.release}: use X.Y or X.Y-suffix, one digit each")
         PRODUCT = BOARD_PREFIX[BOARD] + m[1] + m[2]
         VERSION = a.release.upper() if "BETA" in a.release.upper() else a.release.upper() + " BETA"
+        if BOARD == "smk37":         # the product's name in front (splash.c: PRO is the badge, the digits under it)
+            VERSION = "SLOOP PRO " + a.release.upper()
         name = f"{stem}-{a.release}.fwsc"
     fm1pkg_make.SDK = a.sdk
     for rel, sha in SDK_SHA256.items():          # fail early without the SDK

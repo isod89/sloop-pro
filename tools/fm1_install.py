@@ -9,8 +9,12 @@ step 2, the loader reads the whole package and writes it. In both steps the
 device asks (SysEx read requests on the logical image) and we answer. Then
 the FM-1 restarts and the installed identity is checked.
 
-  fm1_install.py PACKAGE.fwsc [--port NAME] [--yes] [--force] [--fm1]
+  fm1_install.py PACKAGE.fwsc [PACKAGE.fwsc ...] [--port NAME] [--yes] [--force] [--fm1]
   fm1_install.py --info [--port NAME]
+
+With several packages (SLOOP Pro: sloop-pro.fwsc, sloop-pro-elite.fwsc, sloop-pro-mke.fwsc), the one made for
+the connected keyboard's model is installed: SMK-37 Pro, SMK-37 Elite or MKE-P37 by name; a Starrykey 37 Play
+or an SMK-37 that does not name its model takes the SMK-37 Pro one. A directory stands for its .fwsc files.
 
 If the FM-1 is still in update mode (an earlier install was cut off), the
 install finishes the write. Needs mido with python-rtmidi.
@@ -47,13 +51,17 @@ PORT_RE = re.compile(r"fm-1|smk|elite|mke-p37|starry|felucca|sloop|clipper|melod
 # the stock firmware: as web/fm1ota.js PORT_RE)
 OWN_LOADER_RE = re.compile(r"ota-(FM-1|SMK-37 Pro|SMK-37 Elite|MKE-P37)_9\d\d", re.I)   # SLOOP's own update loader
 
-# seconds; the tests shorten them
+# ChanceTheMaker's SMK firmwares (Felucca SMK, Sloop SMK, Melodee SMK, Doom): "SMK-37_9NN", their own updater and
+# package format (as web/fm1ota.js OTHER_SMK): never written from here
+OTHER_SMK_RE = re.compile(r"(ota-)?SMK-37_9\d\d", re.I)
+
+# seconds; the tests shorten them (2.8: the loader and the restart waited for up to 60 s, as the web installer)
 DELAY = {"open": 0.3, "start": 2.0, "reply": 0.01, "loader": 3.0, "reboot": 3.0, "retry": 1.0,
          "poll": 1.0, "hs": 1.0, "idle_check": 8.0, "idle_write": 180.0,
-         "wait_loader": 30.0, "wait_reboot": 40.0}
+         "wait_loader": 60.0, "wait_reboot": 60.0}
 
 EXIT = {"usage": 2, "badpkg": 2, "notfound": 3, "model": 6, "lost": 4, "stopped": 4, "badreq": 4,
-        "noloader": 5, "noreturn": 5, "mismatch": 6, "foreign": 6,
+        "noloader": 5, "noreturn": 5, "mismatch": 6, "foreign": 6, "other": 6,
         "fm1pkg": 6, "board": 6, "fm1confirm": 6}
 
 
@@ -312,10 +320,15 @@ class Updater:
             return mine + [n for n in names if n not in mine and PORT_RE.search(n)]
         return [n for n in names if PORT_RE.search(n)]
 
-    def find(self, want=None, only_port=True):
-        """the first matching port that answers the handshake (and want(identity))"""
+    def find(self, want=None, only_port=True, deep=False):
+        """the first matching port that answers the handshake (and want(identity)). deep (the update loader only):
+        when no named port answered, the other ports too, taken only when they answer the handshake: Windows may
+        name the loader generically ("USB MIDI Device"), as web/fm1ota.js find(filter, deep)"""
         outs = self.backend.output_names()
-        for name in self.candidates(only_port):
+        names = self.candidates(only_port)
+        if deep and not self.port:
+            names = names + [n for n in self.backend.input_names() if n not in names]
+        for name in names:
             out = pair_output(name, outs)
             if not out:
                 continue
@@ -329,10 +342,10 @@ class Updater:
             link.close()
         return None
 
-    def wait_for(self, want, secs):
+    def wait_for(self, want, secs, deep=False):
         end = time.monotonic() + secs
         while time.monotonic() < end:
-            dev = self.find(want, only_port=False)
+            dev = self.find(want, only_port=False, deep=deep)
             if dev:
                 return dev
             time.sleep(DELAY["retry"])
@@ -381,7 +394,7 @@ class Updater:
                                f"{served} requests; nothing was written")
         step("loader")
         time.sleep(DELAY["loader"])
-        ota = self.wait_for(lambda i: i.loader, DELAY["wait_loader"])
+        ota = self.wait_for(lambda i: i.loader, DELAY["wait_loader"], deep=True)
         if not ota:
             raise InstallError("noloader", "the update loader did not appear. Replug the USB cable and "
                                            "run the install again: the FM-1 stays in update mode until it is done")
@@ -416,6 +429,11 @@ class Updater:
     def install(self, dev, image, product, step=lambda *a: None, fm1_ok=False):
         """running firmware -> loader -> new firmware; dev from find(). A device already in
         update mode only needs the write."""
+        if OTHER_SMK_RE.fullmatch(dev.id.text):
+            dev.link.close()
+            raise InstallError("other", f"the keyboard runs one of ChanceTheMaker's SMK firmwares ({dev.id.text}), "
+                                        "which take only their own packages: nothing was sent. Go back to the M-Vave "
+                                        "firmware first (its own restore page, or M-Vave's M-UPGRADE), then install")
         refusal = board_refusal(model_of(dev.id.text), image, fm1_ok)   # (the package's board, before anything)
         if refusal:
             dev.link.close()
@@ -451,6 +469,37 @@ def load_package(path, force):
         raise InstallError("badpkg", f"{path}: damaged package ({bad}); nothing was written. "
                                      "Download it again.")
     return product, image
+
+
+def load_packages(paths, force):
+    """the packages given (a directory: its .fwsc files) -> [(path, product, image)]"""
+    from pathlib import Path
+    files = []
+    for p in paths:
+        p = Path(p)
+        files += sorted(p.glob("*.fwsc")) if p.is_dir() else [p]
+    if not files:
+        raise InstallError("badpkg", f"no .fwsc package in {', '.join(map(str, paths))}")
+    out = []
+    for f in files:
+        product, image = load_package(str(f), force)
+        out.append((str(f), product, image))
+    return out
+
+
+def pick_package(device_text, pkgs):
+    """the package for the connected device among several (SLOOP Pro: one per model): the same model by name;
+    else (a Starrykey 37 Play, an SMK-37 that does not name its model) the SMK-37 Pro one; else the only one of the
+    same keyboard. None: none fits (install() then says why)"""
+    if len(pkgs) == 1:
+        return pkgs[0]
+    m = model_of(device_text).lower()
+    same = [p for p in pkgs if model_of(p[1]).lower() == m]
+    if same:
+        return same[0]
+    kin = [p for p in pkgs if same_keyboard(device_text, p[1])]
+    pro = [p for p in kin if model_of(p[1]).lower() == "smk-37 pro"]
+    return pro[0] if pro else (kin[0] if len(kin) == 1 else None)
 
 
 def _crc16(data, crc=0):
@@ -641,13 +690,20 @@ def run(a, backend, out, ask):
         mode = "update loader (update not finished)" if dev.id.loader else "running"
         print(f"{dev.id.text}  [{mode}]  port: {dev.name}", file=out)
         return 0
-    product, image = load_package(a.package, a.force)
-    print(f"package: {product}  ({a.package})", file=out)
+    pkgs = load_packages(a.package, a.force)
     dev = up.find()
+    if not dev and any(SMK_MODEL_RE.fullmatch(model_of(p[1])) for p in pkgs):
+        dev = up.find(lambda i: i.loader, deep=True)    # (left in update mode under a generic port name)
     if not dev:
         raise not_found(up)
     print(f"device:  {dev.id.text}  ({dev.name})" + ("  in update mode: the write will be finished" if dev.id.loader else ""),
           file=out)
+    pick = pick_package(dev.id.text, pkgs)
+    if not pick:
+        dev.link.close()
+        raise InstallError("model", f"none of the packages ({', '.join(p[1] for p in pkgs)}) is for {dev.id.text}")
+    path, product, image = pick
+    print(f"package: {product}  ({path})", file=out)
     if not a.yes and not ask("Install? Do not unplug the FM-1 while writing. [y/N] "):
         dev.link.close()
         print("cancelled", file=out)
@@ -674,7 +730,8 @@ def ask_tty(prompt):
 
 def main(argv=None, backend=None, out=sys.stdout, ask=ask_tty):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("package", nargs="?", help="Felucca package (.fwsc)")
+    ap.add_argument("package", nargs="*", help="Felucca package (.fwsc); several (or a directory): the one for the "
+                                               "connected model")
     ap.add_argument("--info", action="store_true", help="print the identity of the connected FM-1")
     ap.add_argument("--port", metavar="NAME", help="MIDI port to use (part of its name)")
     ap.add_argument("--yes", action="store_true", help="do not ask for confirmation")

@@ -458,12 +458,65 @@ def against_js():
     ok(I.LOADER_MARK in raw, f"{clean.name} carries the Felucca loader marker")
 
 
+def sloop_pro():
+    """SLOOP Pro: one package per model, the one for the connected keyboard; the loader under a generic port name;
+    ChanceTheMaker's SMK firmwares refused before anything is sent"""
+    pkgs = {m: package(f"{m}_900", seed=s) for m, s in (("SMK-37 Pro", 11), ("SMK-37 Elite", 12), ("MKE-P37", 13))}
+    files = [pkgfile(f"sloop-pro{sfx}.fwsc", pkgs[m]) for m, sfx in (("SMK-37 Pro", ""), ("SMK-37 Elite", "-elite"),
+                                                                     ("MKE-P37", "-mke"))]
+    trio = [(f, I.product_of(pkgs[m]), I.logical_image(pkgs[m])) for f, m in zip(files, pkgs)]
+    pick = lambda t: (I.pick_package(t, trio) or (None, None))[1]
+    ok(pick("SMK-37 Elite_016") == "SMK-37 Elite_900" and pick("MKE-P37_016") == "MKE-P37_900"
+       and pick("SMK-37 Pro_016") == "SMK-37 Pro_900" and pick("ota-SMK-37 Elite_900") == "SMK-37 Elite_900",
+       "pick_package: the connected model's package (running or in update mode)")
+    ok(pick("STARRYKEY-37 PLAY_016") == "SMK-37 Pro_900" and pick("SMK-37+VA_016") == "SMK-37 Pro_900"
+       and pick("FM-1_015") is None and pick("SMK-37_954") is None,
+       "pick_package: Starrykey / unnamed SMK -> the Pro one; FM-1 and other SMK firmwares: none")
+    for model in pkgs:                                  # end to end: all three packages given, each unit gets its own
+        img = I.logical_image(pkgs[model])
+        dev = FakeFM1(img, identity=f"{model}_016", name=f"{model} Midi", after_write=f"{model}_900",
+                      loader=(f"ota-{model}_900", "Felucca Update"))
+        rc, out, err = cli(files + ["--yes"], dev)
+        ok(rc == 0 and dev.bad == 0 and dev.upgrades == 2 and f"runs {model}_900" in out,
+           f"three packages on an {model}: its own installed")
+    d = TMP / "pro-dir"                                 # a directory stands for its packages
+    d.mkdir(exist_ok=True)
+    for f in files:
+        shutil.copy(f, d)
+    img = I.logical_image(pkgs["SMK-37 Elite"])
+    dev = FakeFM1(img, identity="SMK-37 Elite_016", name="SMK-37 Elite", after_write="SMK-37 Elite_900",
+                  loader=("ota-SMK-37 Elite_900", "Felucca Update"))
+    rc, out, err = cli([str(d), "--yes"], dev)
+    ok(rc == 0 and dev.bad == 0 and "SMK-37 Elite_900" in out, "a directory of packages: the Elite one on an Elite")
+    # Windows may name the update loader generically: found by the handshake, not by its name
+    img = I.logical_image(pkgs["SMK-37 Pro"])
+    dev = FakeFM1(img, identity="SMK-37 Pro_016", name="SMK-37 Pro Midi", after_write="SMK-37 Pro_900",
+                  loader=("ota-SMK-37 Pro_900", "USB MIDI Device"))
+    ok(not I.PORT_RE.search("USB MIDI Device"), "(the generic name is not one PORT_RE probes)")
+    rc, out, err = cli(files + ["--yes"], dev)
+    ok(rc == 0 and dev.bad == 0 and dev.upgrades == 2, "the loader under a generic port name: found, written")
+    dev = FakeFM1(img, identity="ota-SMK-37 Pro_900", name="USB MIDI Device", after_write="SMK-37 Pro_900")
+    rc, out, err = cli(files + ["--yes"], dev)
+    ok(rc == 0 and dev.bad == 0 and dev.upgrades == 1, "... left in update mode under that name: the write finished")
+    for ident in ("SMK-37_954", "ota-SMK-37_931"):
+        dev = FakeFM1(img, identity=ident, name="SMK-37 Pro Midi")
+        rc, out, err = cli(files + ["--yes"], dev)
+        ok(rc == 6 and dev.upgrades == 0, f"ChanceTheMaker's {ident}: exit 6, nothing sent")
+    dev = FakeFM1(img, identity="SMK-37_954", name="SMK-37 Pro Midi")
+    rc, out, err = cli([files[0], "--yes"], dev)
+    ok(rc == 6 and dev.upgrades == 0 and "ChanceTheMaker" in err, "... one package: the reason said, nothing sent")
+    dev = FakeFM1(img, identity="FM-1_015", name="FM-1")
+    rc, out, err = cli(files + ["--yes"], dev)
+    ok(rc == 6 and dev.upgrades == 0, "SLOOP Pro packages on an FM-1: exit 6, nothing sent")
+
+
 wire()
 installs()
 errors()
 smk()
 boards()
 against_js()
+sloop_pro()
 shutil.rmtree(TMP, ignore_errors=True)
 # the SMK-37 Pro, Elite and MKE-P37 are one keyboard: packages install across them, never across FM-1 / SMK
 ok(I.same_keyboard("SMK-37 Elite_016", "SMK-37 Pro_900") and I.same_keyboard("ota-MKE-P37_900", "SMK-37 Elite_900")

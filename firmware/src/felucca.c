@@ -19,11 +19,21 @@
 #include "fm1_lcd_hw.h"
 #include "fm1_cpu1.h"      /* the second core (X0X): started in main.c, used by the render later */
 #include "felucca_tables.h"
+#if BOARD_SMK37                 /* SLOOP Pro: SLOOP on the M-Vave SMK-37 (Pro, Elite, MKE-P37, Starrykey 37 Play) */
+#define BRAND_NAME "SLOOP PRO"
+#define BRAND_SAIL_X 160         /* (FONT_L: 16 px a letter, "SLOOP PRO" ends at 148) */
+#define BRAND_RESCUE "SLOOP PRO USB RESCUE"
+#define BRAND_URL "GITHUB.COM/ISOD89/SLOOP-PRO"
+#ifndef FELUCCA_VERSION
+#define FELUCCA_VERSION "SLOOP PRO 2.8.1"   /* ui.c's, with the product's name (the editor reads the digits) */
+#endif
+#else
 #define BRAND_NAME "SLOOP"
 #define BRAND_SAIL_X 96
+#define BRAND_RESCUE "SLOOP USB RESCUE"
+#endif
 #define BRAND_BASED "BASED ON FELUCCA"
 #define BRAND_CRASH "FELUCCA CRASH"
-#define BRAND_RESCUE "SLOOP USB RESCUE"
 #define VIS_STYLES 12u
 #define VIS_LAST_NAMES "SLOOP"
 #define VIS_N_STR "/12"
