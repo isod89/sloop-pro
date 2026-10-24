@@ -96,6 +96,7 @@
 #endif
 #if BOARD_SMK37
 #include "smk_vel.h"          /* SMK-37: menu KEY VELOCITY (DYNAMIC, curves, FIXED), read by seq.c */
+#include "smk_pedal.h"         /* SLOOP Pro: the PEDAL jack as a sustain pedal (seq.c pedal_block) */
 #include "smk_wheel.h"        /* SMK-37: the wheels, their calibration, menu BEND UP / DOWN (main.c smk_wheels) */
 #include "smk_daw.h"          /* SMK-37: DAW mode, the map and its messages (seq.c: keys, pads; ui_daw.c: the rest) */
 #endif

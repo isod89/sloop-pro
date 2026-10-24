@@ -157,6 +157,58 @@ int main(void)
     tick(200);
     check(!smo.dead && smo.timeouts == 1u && ut_len == 3u, "a single stall: given up after 3 ms, then on as normal");
 
+    reset();                                           /* SLOOP Pro: TRS MIDI OUT set OFF with notes on: their note-offs */
+    smo_put(PKT(9, 0x90, 60, 100));
+    smo_put(PKT(9, 0x93, 64, 90));
+    smo_put(PKT(9, 0x90, 67, 80));
+    smo_put(PKT(8, 0x80, 67, 0));                      /* (ended: no second note-off) */
+    tick(500);
+    ut_len = 0;
+    smo_on(0);
+    smo_put(PKT(9, 0x90, 70, 100));                    /* (OFF: not sent, not kept) */
+    tick(2000);
+    {
+        static const uint8_t want[] = {0x80, 60, 0, 0x83, 64, 0, 0xB0, 64, 0, 0xB0, 123, 0, 0xB3, 64, 0, 0xB3, 123, 0};
+        check(bytes_are(want, sizeof want), "SLOOP Pro: set OFF: a note-off for each note on, sustain off, all notes off");
+    }
+    ut_len = 0;
+    smo_on(1);
+    smo_on(0);
+    tick(2000);
+    check(ut_len == 0, "... nothing on: an OFF sends nothing");
+    reset();                                           /* a note-off that finds the ring full: the flush ends it */
+    smo_put(PKT(9, 0x91, 50, 100));
+    for (i = 0; i < 84u; i++)
+        smo_put(PKT(11, 0xB1, 7, i & 127u));
+    smo_put(PKT(8, 0x81, 50, 0));                      /* (no room: dropped) */
+    check(smo.drops == 1u && smo.flush, "SLOOP Pro: a note-off dropped (ring full): a flush is asked for");
+    tick(100000);
+    check(ut_len == 3u + 84u * 3u + 9u && ut_out[255] == 0x81 && ut_out[256] == 50 && ut_out[257] == 0 &&
+          ut_out[258] == 0xB1 && ut_out[259] == 64 && ut_out[261] == 0xB1 && ut_out[262] == 123 && !ut_overrun,
+          "... after the ring: that note's note-off, CC 64 0, CC 123: nothing hanging");
+    reset();                                           /* flush bytes and ring bytes never mix inside a message */
+    for (i = 0; i < 40u; i++)
+        smo_put(PKT(9, 0x90 | (i & 15u), 30 + i, 100));
+    smo_on(0);
+    smo_on(1);
+    for (t = 0; t < 3000u; t++) {
+        tick(1);
+        if (t % 7u == 0u)
+            smo_put(PKT(11, 0xB2, 1, t & 127u));
+    }
+    tick(20000);
+    {
+        uint32_t p = 0, bad = 0;
+        while (p < ut_len) {                               /* every message whole: a status, then its data */
+            uint32_t len = (ut_out[p] & 0xF0u) == 0xC0u || (ut_out[p] & 0xF0u) == 0xD0u ? 2u : 3u;
+            bad += !(ut_out[p] & 0x80u);
+            for (i = 1; i < len && p + i < ut_len; i++)
+                bad += (ut_out[p + i] & 0x80u) != 0u;
+            p += len;
+        }
+        check(!bad && !ut_overrun && p == ut_len, "... a flush with traffic going on: every message whole");
+    }
+
     printf("smk_midi_out: %s\n", fails ? "FAILED" : "all ok");
     return fails != 0;
 }

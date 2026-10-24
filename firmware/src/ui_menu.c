@@ -18,7 +18,11 @@ enum { MI_COLOR, MI_ZOOM,
 #else
        MI_ACCEL,
 #endif
-       MI_LIGHTS, MI_KEYS, MI_NOTES, MI_LOWCUT,
+       MI_LIGHTS, MI_KEYS, MI_NOTES,
+#if BOARD_SMK37
+       MI_PADL,                                    /* SLOOP Pro: LIGHTS > PAD LIGHTS (lcd.c padled_dim) */
+#endif
+       MI_LOWCUT,
 #if BOARD_SMK37
        MI_LIMIT, MI_FRESO,                         /* SMK-37: AUDIO > LIMITER (fx.c lim_classic), FILTER RESO */
        MI_USB,                                     /* SMK-37: USB > USB AUDIO, USB SERIAL, USB RATE */
@@ -46,7 +50,11 @@ static const char *const MI_NAME[MI_COUNT] = {"COLOR", "ZOOM",
 #else
                                               "KNOB ACCEL",
 #endif
-                                              "LIGHTS", "KEYS", "NOTES", "SPEAKER LOWCUT",
+                                              "LIGHTS", "KEYS", "NOTES",
+#if BOARD_SMK37
+                                              "PAD LIGHTS",
+#endif
+                                              "SPEAKER LOWCUT",
 #if BOARD_SMK37
                                               "LIMITER", "FILTER RESO", "USB AUDIO",
 #if FELUCCA_CDC
@@ -142,6 +150,10 @@ UI_SMALL static const char *mi_value(uint32_t i, uint16_t *c)
     case MI_DPREV: return drum_preview ? "ON" : "OFF";     /* (2.7.1) a drum sound picked with a knob is heard */
 #if BOARD_SMK37
     case MI_VEL: return VEL_NAME[vel_mode % VEL_N];
+    case MI_PADL: {                                   /* SLOOP Pro: the pads' brightness */
+        static const char *const P[3] = {"HIGH", "MID", "LOW"};
+        return P[padled_dim % 3u];
+    }
     case MI_TRS:
         if (trs_out && smo.dead) {                    /* (the UART never finished a byte: OCT+ tries again) */
             *c = C_AMB;
@@ -223,7 +235,7 @@ UI_SMALL static void draw_menu(void)
                    lights_notes * 32452843u + usb_full * 49979687u + usb_serial * 86028121u + usb_rate * 15486719u + theme_shown() * 32452867u + theme.crc + cpu1_off * 122949829u +
                    knob_accel_off * 179424673u + drum_preview * 236887691u + step_adv_off * 373587883u + flt_reso * 512927357u;
 #if BOARD_SMK37
-    sig += vel_mode * 179424673u + trs_out * 373587883u + smo.dead * 573259391u + bend_up * 817504243u +
+    sig += padled_dim * 2654435761u + vel_mode * 179424673u + trs_out * 373587883u + smo.dead * 573259391u + bend_up * 817504243u +
            bend_dn * 941083987u + lim_classic * 1500450271u + knob_layout * 2147483647u;
     sig += daw_on * 1000003u + daw_ch * 2000029u + daw_local * 3000017u + daw_user * 4000037u + daw_rel * 5000011u +
            daw_user_changed() * 6000047u + (ui.arm == MI_ARM_RESET && ui.arm_t) * 7000003u;
@@ -499,6 +511,18 @@ UI_SMALL static void mi_set(uint32_t i, int32_t s)
             ui_message("USER MAP RESET");
         }
         break;
+    case MI_PADL: {                                    /* SLOOP Pro: right brighter (LOW MID HIGH, stops at the ends); OCT+
+                                                        * steps round. Each change shows it: the 16 pads in the tracks'
+                                                        * colours, two a colour, for 1.5 s (a test of every pad too) */
+        static const uint8_t PAL[4][3] = {{40, 124, 255}, {30, 204, 112}, {255, 198, 24}, {255, 98, 26}};
+        uint32_t lv = 2u - padled_dim % 3u, p;     /* 0 LOW .. 2 HIGH */
+        lv = s > 0 ? (lv < 2u ? lv + 1u : 2u) : s < 0 ? (lv ? lv - 1u : 0u) : (lv + 1u) % 3u;
+        padled_dim_set(2u - lv);
+        for (p = 0; p < SMK_NPAD; p++)
+            padled_set(p, PAL[(p % 8u) / 2u][0], PAL[(p % 8u) / 2u][1], PAL[(p % 8u) / 2u][2]);
+        padled_hold_until = fm1_ms + 1500u;
+        break;
+    }
     case MI_VEL:                                       /* DYNAMIC .. FIXED 127 (stops at the ends); OCT+ steps round */
         if (s > 0 && vel_mode + 1u < VEL_N)
             vel_mode++;

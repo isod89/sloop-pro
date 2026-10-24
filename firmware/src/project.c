@@ -805,7 +805,8 @@ static void daw_save(void)
 #define SMKSET_MAGIC 0x54534B53u                   /* "SKST" */
 typedef struct {
     uint32_t magic;
-    uint8_t vel, trs, bup, bdn, lim, klay, rsv[2];   /* bup / bdn: smk_wheel.h bend_*_byte */
+    uint8_t vel, trs, bup, bdn, lim, klay, pad, rsv;   /* bup / bdn: smk_wheel.h bend_*_byte; pad: SLOOP Pro's PAD
+                                                       * LIGHTS (lcd.c padled_dim; 0 in older data: HIGH, as before) */
 } smkset_t;
 static smkset_t smkset_saved;
 static uint8_t smkset_old_ml[3], smkset_old_have;  /* the MIDI part's last three bytes as read (midi_part_read) */
@@ -819,6 +820,7 @@ static void smkset_fill(smkset_t *s)
     s->bdn = (uint8_t)bend_dn_byte(bend_dn, bend_up);
     s->lim = (uint8_t)(lim_classic != 0u);
     s->klay = (uint8_t)(knob_layout != 0u);
+    s->pad = (uint8_t)(padled_dim % 3u);
 }
 static void smkset_boot(void)                      /* after the settings (persist_boot, dsu_boot) */
 {
@@ -831,6 +833,7 @@ static void smkset_boot(void)                      /* after the settings (persis
         lim_classic = (uint8_t)(s.lim & 1u);
         knob_layout = (uint8_t)(s.klay & 1u);
         knob_layout_apply();
+        padled_dim_set(s.pad < 3u ? s.pad : 0u);
         smkset_fill(&smkset_saved);
         return;
     }
@@ -850,6 +853,7 @@ static void smkset_boot(void)                      /* after the settings (persis
         lim_classic = (uint8_t)(smkset_old_ml[2] & 1u);                   /* (0: SOFT) */
         knob_layout = (uint8_t)((smkset_old_ml[2] >> 1) & 1u);            /* (0: FM-1) */
         knob_layout_apply();
+        flt_reso = 0;                              /* (SLOOP Pro: 2.7.2's FILTER RESO bits sit in BEND DOWN's old byte) */
         fm1_irq_off();                             /* (SLOOP 2.7's GLO > MIDI 3 in those bytes: FX CH, DR MAP, CLK OUT,
                                                     * REMOTE off, their defaults; the ISR reads them) */
         midi_set[6] = midi_set[7] = midi_set[8] = midi_set[9] = 0;

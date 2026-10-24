@@ -2382,6 +2382,39 @@ static void pick_aud_block(void)
 }
 #endif
 
+#if BOARD_SMK37
+/* SLOOP Pro: the sustain pedal on the PEDAL jack (smk_pedal.h). Down: the selected synth track sustains, as MIDI IN's
+ * CC 64 does (sus_set), and CC 64 goes out on its MIDI channel (USB, and the TRS jack); up: that track lets go,
+ * whichever track is selected by then. DAW mode: CC 64 on CHANNEL, the track sustains too with LOCAL ON. The drum
+ * track has no sustain: a pedal there only goes out over MIDI */
+static void sus_set(track_t *t, int on);
+static smk_ped_t ped;
+static uint8_t ped_trk;                           /* the track the pedal holds + 1, 0 none */
+static uint8_t ped_mc = 0xFFu;                    /* the channel its CC 64 went out on (the up goes there too) */
+static void pedal_block(void)
+{
+    int e;
+    uint32_t sel = song.sel % NTRK;
+    if (fm1_in.frames < 300u)                     /* (the readings settle) */
+        return;
+    if ((e = smk_ped_sample(&ped, fm1_in.pedal, fm1_ms)) < 0)
+        return;
+    if (e) {
+        ped_mc = (uint8_t)(daw_isr ? (daw_ch - 1u) & 15u : trk_midi_ch(sel));
+        if (!daw_isr || daw_local)
+            if (!is_drum(&trk[sel])) {
+                ped_trk = (uint8_t)(sel + 1u);
+                sus_set(&trk[sel], 1);
+            }
+    } else if (ped_trk) {
+        sus_set(&trk[(ped_trk - 1u) % NTRK], 0);
+        ped_trk = 0;
+    }
+    if (ped_mc <= 15u)
+        midi_out_event(0x0Bu | (0xB0u | ped_mc) << 8 | 64u << 16 | (e ? 127u : 0u) << 24);
+}
+#endif
+
 static void keyboard_block(void)
 {
     uint32_t cur = fm1_in.notes, ch = cur ^ kb_prev, k, r;
@@ -2390,6 +2423,7 @@ static void keyboard_block(void)
      * erasing) */
 #if BOARD_SMK37
     daw_follow();                                     /* (DAW mode: the keys send MIDI, smk_daw.h) */
+    pedal_block();                                    /* (SLOOP Pro: the sustain pedal) */
     ext_keys_block();
     pick_aud_block();
     if (daw_isr) {

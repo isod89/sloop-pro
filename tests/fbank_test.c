@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 /* SMK-37 Pro FADER BANK screen (firmware/src/ui_fbank.c) on the UI harness: banks wrap, what each fader sets,
- * closes by itself; renders DIR/fbank-a.ppm, fbank-b.ppm. */
+ * closes by itself; renders DIR/fbank-a.ppm, fbank-b.ppm, fbank-e.ppm, fbank-e-drums.ppm (SLOOP Pro: bank E). */
 #define UI_PAGES_HARNESS_ONLY 1
 #include "ui_pages_test.c"
 static uint8_t smk_fbank, smk_fbank_new;           /* (ui_input.c, SMK build) */
@@ -29,10 +29,23 @@ int main(int argc, char **argv)
 
     fb_set(smk_fbank + 1u);
     check(fb_shown() && smk_fbank == 1 && smk_fbank_new, "FADER BANK: the next bank, its screen up");
-    fb_set(smk_fbank + 3u);
+    fb_set(smk_fbank + FB_N - 1u);
     check(smk_fbank == 0, "SELECT back: bank A");
     fb_set(3u + 1u);
-    check(smk_fbank == 0, "D -> A wraps");
+    check(smk_fbank == 4, "D -> E (SLOOP Pro: ENV)");
+    fb_set(4u + 1u);
+    check(smk_fbank == 0, "E -> A wraps");
+    fb_set(0u + FB_N - 1u);
+    check(smk_fbank == 4, "A back -> E");
+    song.sel = 1;
+    check(fb_param(4, 0, &vp) == &TP[P_ATK] && vp == &trk[1].p[P_ATK] && fb_param(4, 3, &vp) == &TP[P_REL] &&
+          vp == &trk[1].p[P_REL], "bank E: the selected synth track's ATTACK .. RELEASE");
+    ui.force = 1; fb_shot("fbank-e");
+    song.sel = TRK_DRUM;
+    check(!fb_param(4, 0, &vp) && !fb_param(4, 3, &vp), "bank E, the drum track selected: nothing");
+    ui.force = 1; fb_shot("fbank-e-drums");
+    song.sel = 0;
+    fb_set(0);
     check(fb_param(0, TRK_DRUM, &vp) == &GP[G_DRLVL] && vp == &song.g[G_DRLVL], "bank A, fader 4: the drums' level");
     check(fb_param(1, TRK_DRUM, &vp) == &TP[P_TFLT] && vp == &TDRUM->p[P_TFLT], "bank B, fader 4: the drum track's filter");
     check(fb_param(2, 0, &vp) == &TP[P_REV] && vp == &trk[0].p[P_REV], "bank C, fader 1: track 1's reverb");
@@ -44,8 +57,8 @@ int main(int argc, char **argv)
     ui.layer = LY_PLAY;
     fm1_ms += 60000u;
     check(fb_shown(), "stays up until FADER BANK / PATCH");
-    fb_set(3); fb_set(smk_fbank + 1u);
-    check(smk_fbank == 0, "K2 turns the bank round (D -> A)");
+    fb_set(4); fb_set(smk_fbank + 1u);
+    check(smk_fbank == 0, "K2 turns the bank round (E -> A)");
     fb_close();
     check(!fb_shown(), "closed");
     printf("fbank: %s\n", fails ? "FAIL" : "ok");

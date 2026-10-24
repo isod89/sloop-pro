@@ -72,7 +72,7 @@ run "live UI: pages, layers (punch, steps, erase, roll, key, mix), holds, drums,
 $CC -O2 -w -Ibuild/gen -Ifirmware/src -Ifirmware/hal -o "$OUT/pick_test" tests/pick_test.c -lm
 run "SMK-37 Pro pad sound picker: pages by kind, pads load, < >, drum kits" "$OUT/pick_test" "$OUT"
 $CC -O2 -w -Ibuild/gen -Ifirmware/src -Ifirmware/hal -o "$OUT/fbank_test" tests/fbank_test.c -lm
-run "SMK-37 Pro FADER BANK screen: banks wrap, what each fader sets, closes by itself" "$OUT/fbank_test" "$OUT"
+run "SMK-37 Pro FADER BANK screen: banks wrap (SLOOP Pro: E ENV), what each fader sets, closes by itself" "$OUT/fbank_test" "$OUT"
 $CC -O2 -w -Ibuild/gen -Ifirmware/src -Ifirmware/hal -o "$OUT/k4led_test" tests/k4led_test.c -lm
 run "SMK-37 Pro: KNOB BANK lit on a PRESETS detent; which modes are a grid" "$OUT/k4led_test" "$OUT"
 $CC -O2 -w -Ifirmware/hal -o "$OUT/padgrid_test" tests/padgrid_test.c
@@ -88,6 +88,13 @@ vel_applied() {
     echo applied
 }
 run "SMK-37 menu KEY VELOCITY: applied wherever the app reads a key or pad velocity" vel_applied
+$CC -Ifirmware/src -o "$OUT/smk_pedal_test" tests/smk_pedal_test.c
+run "SLOOP Pro sustain pedal: polarity learnt at power-on, bounce, an open jack, never stuck" "$OUT/smk_pedal_test"
+pedal_wired() {
+    sed -n '/^static void keyboard_block(void)/,/^}/p' firmware/src/seq.c | grep -q 'pedal_block();' &&
+    sed -n '/^static void pedal_block(void)/,/^}/p' firmware/src/seq.c | grep -q 'smk_ped_sample(&ped, fm1_in.pedal, fm1_ms)' && echo wired
+}
+run "SLOOP Pro sustain pedal: read in the audio context, before DAW mode takes the keys" pedal_wired
 $CC -o "$OUT/smk_wheel_test" tests/smk_wheel_test.c
 run "SMK-37 wheels: BEND UP / DOWN, the calibration (full travel = full range, re-centre), back to 0 at rest" "$OUT/smk_wheel_test"
 $CC -O2 -w -DSMK_MIX=1 -Ibuild/gen -Ifirmware/src -o "$OUT/smk_mix_test" tests/smk_mix_test.c -lm
@@ -95,7 +102,7 @@ run "SMK-37 LIMITER: SOFT leaves held chords alone at power-on, catches peaks, n
 $CC -o "$OUT/smk_knobs_test" tests/smk_knobs_test.c
 run "SMK-37 KNOB LAYOUT: FM-1 / SMK, each knob one role, calibration per printed knob, labels" "$OUT/smk_knobs_test"
 $CC -o "$OUT/smk_midi_out_test" tests/smk_midi_out_test.c
-run "SMK-37 TRS MIDI OUT: the bytes, the ring, one byte at a time, OFF, no UART: no hang" "$OUT/smk_midi_out_test"
+run "SMK-37 TRS MIDI OUT: the bytes, the ring, one byte at a time, OFF, no UART: no hang; SLOOP Pro: no note left on (OFF, a dropped note-off)" "$OUT/smk_midi_out_test"
 # every USB MIDI out packet goes to the TRS jack too (usb.c midi_out_event, before the USB check), and the TIMER5 tick
 # drains it
 trs_fed() {

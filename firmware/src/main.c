@@ -131,7 +131,8 @@ UI_SMALL static void hexs(char *b, uint32_t v)
 
 #if BOARD_SMK37
 /* the SMK-37 Pro's 4 faders, tracks 1..4 (4 = drums), by FADER BANK (ui_input.c smk_fbank): A level, B the
- * track's filter (P_TFLT: low-pass left, open in the middle, high-pass right), C reverb send, D delay send.
+ * track's filter (P_TFLT: low-pass left, open in the middle, high-pass right), C reverb send, D delay send;
+ * SLOOP Pro: E the selected synth track's envelope, ATTACK DECAY SUSTAIN RELEASE.
  * A fader takes over only once it moves (also after a bank change), so nothing jumps. */
 static void smk_faders(void)
 {
@@ -157,6 +158,13 @@ static void smk_faders(void)
             continue;
         last[i] = (uint8_t)v;
         switch (smk_fbank) {
+        case 4:                                           /* SLOOP Pro: E, the selected synth track's ATTACK, DECAY,
+                                                           * SUSTAIN, RELEASE over their ranges (none on the drum track) */
+            if (!is_drum(TSEL)) {
+                const param_desc_t *d = &TP[P_ATK + i];
+                TSEL->p[P_ATK + i] = (int16_t)(d->min + ((int32_t)d->max - d->min) * (int32_t)v / 127);
+            }
+            break;
         case 1:
             trk[i].p[P_TFLT] = (int16_t)((int32_t)v - 64);
             break;

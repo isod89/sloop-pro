@@ -18,6 +18,9 @@ def main():
     ap.add_argument('--toolchain', required=True)
     ap.add_argument('--sdk', type=Path, required=True)
     ap.add_argument('--skip-generate', action='store_true')
+    ap.add_argument('--board', choices=['fm1', 'smk37'], help='BOARD for the build (smk37: SLOOP Pro, the M-Vave SMK-37)')
+    ap.add_argument('--model', choices=['pro', 'elite', 'mke'], help='MODEL with --board smk37: the model name the keyboard reports')
+    ap.add_argument('--release', metavar='X.Y', help='a release build (tools/build.py --release)')
     ap.add_argument('--slice', choices=['0', '1'], help='FELUCCA_SLICE for the compile (the SLICE engine); '
                     'the BREAK sample follows FELUCCA_SLICE in this process environment (tools/gen_samples.py)')
     args = ap.parse_args()
@@ -31,6 +34,12 @@ def main():
     src, sdk = linux_path(ROOT), linux_path(args.sdk)
     code = 'import sys;sys.path.insert(0,"tools");import build;build.generate=lambda:None;sys.exit(build.main())'
     extra = ['FELUCCA_SLICE=' + args.slice] if args.slice else []
+    if args.board:
+        extra.append('BOARD=' + args.board)
+    if args.model:
+        extra.append('MODEL=' + args.model)
+    if args.release:
+        code = code.replace('sys.exit(build.main())', 'sys.argv=["build.py","--release",' + repr(args.release) + '];sys.exit(build.main())')
     subprocess.run(['wsl', '-d', args.distro, '--cd', src, '--exec', 'env',
                     'JIELI_TOOLCHAIN=' + args.toolchain, 'AC79_SDK=' + sdk, *extra,
                     'python3', '-c', code], check=True)
