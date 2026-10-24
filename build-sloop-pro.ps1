@@ -4,7 +4,7 @@
 #   build-sloop-pro.ps1 -SiteOnly  no compile: the installer site again from the packages already in build\release\
 #                                  (OUVRIR-INSTALLATEUR-PRO.bat)
 #   build-sloop-pro.ps1 -SiteOnly -Publish  the site into docs\ (GitHub Pages: https://isod89.github.io/sloop-pro/),
-#                                  nothing served (PUBLIER-GITHUB-PRO.bat)
+#                                  nothing served
 #   build-sloop-pro.ps1 -Diag      a diagnostic build: the USB serial console in (HOME menu > USB > USB SERIAL ON, then
 #                                  a terminal on the keyboard's COM port: status, smk, padtest, leds)
 # Settings (environment, all optional):
