@@ -1821,8 +1821,10 @@ async function updater() {
   if (dodd) dodd.link.close();
   const win = new FakeFM1(image, { identity: "SMK-37 Pro_900", name: "MIDIIN2 (Felucca)", outName: (n) => n.replace("MIDIIN", "MIDIOUT") });
   win.access.outputs.set("other", { id: "other", name: "Microsoft GS Wavetable Synth", state: "connected", open: async () => {}, send: () => {} });
-  const dwin = await new Updater(win.access).find();
-  ok(dwin && dwin.id.text === "SMK-37 Pro_900", "fm1ota.js: MIDIIN2 (X) pairs with MIDIOUT2 (X)");
+  const wlog = [];
+  const dwin = await new Updater(win.access, (t) => wlog.push(t)).find();
+  ok(dwin === null && win.served === 0 && wlog.some((t) => t.includes("extra port")),
+    "fm1ota.js: a device's extra port pair (MIDIIN2 (X)) is never opened (Windows: it hangs Chrome's MIDI)");
   if (dwin) dwin.link.close();
   const pk = await import("./fm1pkg.js");
   const notStock = new Uint8Array(pk.STOCK_V15_SIZE);

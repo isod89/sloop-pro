@@ -1,3 +1,8 @@
+// SLOOP Pro's update library: the installer of genkigenki's SMK-37 site (genkigenki/smk37, from Felucca / SLOOP,
+// GPL-3.0; the version that installs the SMK-37 ports from Chrome on Windows: ports closed before the keyboard leaves
+// the USB, nothing probed until it is gone, a deadline on every port open and every wait, UPGRADE sent again to a
+// silent loader), with SLOOP's additions: find(filter, deep) for a generically named loader, the package's board
+// checked in install() and resume() (boardRefusal), resume(..., { verify }), pickPackage for the three models.
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
 //
@@ -15,7 +20,7 @@ const IS_OTA = (id) => /^ota-/i.test(id.model);
 // Elite's and the MKE-P37's model name, Makkuro37 _7XX). A device left in the update mode of another firmware (the
 // stock updater's loader) is never written: its loader may lay the image out differently. The bare "SMK-37" name
 // ("ota-SMK-37_931") is ChanceTheMaker's SMK firmwares' RAM updater: another package format, so not ours.
-export const OUR_LOADER = (id) => /^ota-(FM-1|SMK-37 Pro|SMK-37 Elite|MKE-P37)_[789]\d\d$/i.test(id.text);
+export const OUR_LOADER = (id) => /^ota-(FM-1|SMK-37 Pro|SMK-37 Elite|MKE-P37)_[3-9]\d\d$/i.test(id.text);   // (also Polly _3XX, Speak37 _5XX, Gen37 _6XX, DUB-1 _8XX)
 // ChanceTheMaker's SMK firmwares (Felucca SMK, Sloop SMK, Melodee SMK, Doom): "SMK-37_9NN", their own updater
 export const OTHER_SMK = (id) => /^(ota-)?SMK-37_9\d\d$/i.test(id.text);
 // the SMK-37 Pro, SMK-37 Elite, MKE-P37, Starrykey 37 Play and the SMK-37+VA mod: one keyboard under several model
@@ -23,21 +28,6 @@ export const OTHER_SMK = (id) => /^(ota-)?SMK-37_9\d\d$/i.test(id.text);
 // another device
 const SMK_FAMILY = /^(ota-)?(SMK-37([ +].*)?|MKE-P37|STARRYKEY-37.*)$/i;
 export const sameKeyboard = (a, b) => a === b || (SMK_FAMILY.test(a) && SMK_FAMILY.test(b));   // two models
-// SLOOP Pro: one package per model (SMK-37 Pro, SMK-37 Elite, MKE-P37). The one for the connected keyboard, from its
-// identity (running, or its update loader's): the same model by name -> { product, anyModel: false }; a Starrykey 37
-// Play or an SMK-37 that does not name its model ("SMK-37+VA") -> the SMK-37 Pro one, { anyModel: true }; an FM-1,
-// another device or ChanceTheMaker's SMK firmwares ("SMK-37_9NN", their own updater) -> null (as fm1_install.py
-// pick_package)
-export function pickPackage(deviceText, products) {
-  if (OTHER_SMK({ text: deviceText })) return null;
-  const dm = deviceText.split("_")[0].replace(/^ota-/i, "").toLowerCase();
-  const same = products.find((p) => p.split("_")[0].toLowerCase() === dm);
-  if (same) return { product: same, anyModel: false };
-  const kin = products.filter((p) => sameKeyboard(dm.toUpperCase(), p.split("_")[0]));
-  const pro = kin.find((p) => /^SMK-37 Pro_/i.test(p));
-  if (pro) return { product: pro, anyModel: true };
-  return kin.length === 1 ? { product: kin[0], anyModel: true } : null;
-}
 // an official package on the connected keyboard (the return to the M-Vave firmware): "same" (its model), "other"
 // (another model of the same keyboard: allowed, the page warns), "unknown" (the keyboard does not name its model,
 // as "SMK-37" or "SMK-37+VA": allowed, the page warns), "refuse" (another device: FM-1 and SMK never mix)
@@ -49,14 +39,49 @@ export function stockFit(deviceModel, product) {
   return NAMED.test(dm) ? "other" : "unknown";
 }
 // the MIDI ports find() probes: the FM-1 / SMK models' and the firmwares' names; other gear is never sent anything
-export const PORT_RE = /fm-1|smk|elite|mke-p37|starry|felucca|sloop|clipper|melodee|fomni|x0x|makkuro|maku|rainbow|snoop|vector|vox|ota|composite|sinco|usb-midi/i;
-export const FM1_PORT = PORT_RE;   // (the older name, for the pages and tests that import it)
+export const PORT_RE = /fm-1|smk|speak|dub|elite|mke-p37|starry|felucca|sloop|clipper|melodee|fomni|x0x|makkuro|maku|rainbow|amb-1|choral|orbit|snoop|vector|vox|gen37|ota|composite|sinco|usb-midi/i;
 // a port name without its in / out part (Windows names a device's second port pair "MIDIIN2 (X)" / "MIDIOUT2 (X)")
 const portBase = (n) => n.replace(/^MIDI(?:IN|OUT)(\d*) \((.*)\)$/i, "$2 $1").replace(/[ -](?:in|out|input|output)$/i, "").trim().toLowerCase();
 
 // errors carry a code the pages translate: notfound, model, stopped, noloader, lost, noreturn,
-// mismatch (detail: the identity the device reports), badreq, foreign (detail: the loader's identity)
+// mismatch (detail: the identity the device reports), badreq, foreign (detail: the loader's identity),
+// norequest (the loader never asked for data), toomany (more requests than any write needs), timeout (step 1 took
+// too long), oldstock (detail: the stock identity: an M-Vave firmware before V016, refused before anything is sent)
 function fail(code, msg, detail = "") { const e = new Error(msg); e.code = code; e.detail = detail; return e; }
+// a serve() result in words (the log)
+const outcome = (r) => r.finished ? "finished" : r.lost ? "port gone" : r.timeout ? "deadline" : r.norequest ? "no request"
+  : r.toomany ? "too many requests" : "idle";
+
+// every wait has an end (ms): a port open (Windows can leave one pending forever), step 1 in all, the wait for the
+// loader, the loader's first request (our loader gets UPGRADE again at resend), the idle time once writing has
+// started, the wait for the new firmware. Updater's opts.timing overrides single values (the tests)
+const TIMING = { open: 3000, step1Idle: 8000, step1Total: 60000, loader: 30000, jumped: 15000, firstReq: 30000,
+  resend: [5000, 15000], idle: 180000, back: 40000, settle: 2000, reboot: 3000 };
+const QMAX = 256;                                      // SysEx messages queued per link: the oldest go first
+// the M-Vave firmwares of the SMK-37 range before V016: their update mode was not built for this installer
+const OLD_STOCK = (id) => SMK_FAMILY.test(id.model) && !/^ota-/i.test(id.model) && !OTHER_SMK(id) && id.version < 16;
+
+// a promise that gives up after ms (the value is then `fallback`); the timer never outlives it
+function within(p, ms, fallback) {
+  let tm;
+  return Promise.race([p, new Promise((r) => { tm = setTimeout(() => r(fallback), ms); })]).finally(() => clearTimeout(tm));
+}
+// the ports this page opened: closed again once the last user lets go (a short delay lets the last answer leave;
+// a find() that opens the port again in the meantime keeps it open)
+const portUsers = new WeakMap();
+async function openPort(port, ms) {
+  portUsers.set(port, (portUsers.get(port) || 0) + 1);
+  const r = await within(Promise.resolve().then(() => port.open()).then(() => true, () => false), ms, "timeout");
+  if (r !== true) releasePort(port, 0);
+  return r;
+}
+function releasePort(port, delay = 300) {
+  setTimeout(() => {
+    const n = (portUsers.get(port) || 1) - 1;
+    portUsers.set(port, n);
+    if (n <= 0 && port.close && port.state !== "disconnected") Promise.resolve().then(() => port.close()).catch(() => {});
+  }, delay);
+}
 
 export function pack7(data) {
   const out = []; let acc = 0, nb = 0;
@@ -109,9 +134,10 @@ function parseIdentity(pkt) {
 // one MIDI in/out pair with a SysEx queue
 class Link {
   constructor(input, output) {
-    this.input = input; this.output = output; this.q = []; this.waiter = null;
+    this.input = input; this.output = output; this.q = []; this.waiter = null; this.dropped = 0; this.closed = false;
     input.onmidimessage = (ev) => {
       if (ev.data[0] !== 0xF0) return;
+      if (this.q.length >= QMAX) { this.q.shift(); this.dropped++; }   // a device that floods: never unbounded
       this.q.push(Array.from(ev.data));
       if (this.waiter) { const w = this.waiter; this.waiter = null; w(); }
     };
@@ -131,12 +157,41 @@ class Link {
     }
     return this.q.shift() || null;
   }
-  // detach the callback only; do NOT close the MIDI ports. find()/probe() reuse the same input across
-  // several output candidates (e.g. the always-present "Microsoft GS Wavetable Synth" is probed before
-  // the FM-1's own output), and closing the input between candidates raced its re-open and broke the
-  // handshake with a device that is present ("FM-1 not found" with the port listed). Leaving ports open
-  // is the long-standing behaviour.
-  close() { this.input.onmidimessage = null; }
+  // done with a device that restarts now (after step 1, after step 2): no more messages, but the ports are not
+  // closed. Closing a port while its device leaves the USB has hung Chrome's MIDI on Windows; the browser drops
+  // the ports of a device that is gone by itself
+  detach() {
+    if (this.closed) return;
+    this.closed = true;
+    this.input.onmidimessage = null;
+    for (const port of [this.input, this.output]) portUsers.set(port, Math.max(0, (portUsers.get(port) || 1) - 1));
+  }
+  // done with a device that restarts in a moment: the ports are closed now, while it is still there
+  closeNow() {
+    if (this.closed) return;
+    this.closed = true;
+    this.input.onmidimessage = null;
+    for (const port of [this.input, this.output]) {
+      const n = Math.max(0, (portUsers.get(port) || 1) - 1);
+      portUsers.set(port, n);
+      if (n <= 0 && port.close && port.state !== "disconnected") Promise.resolve().then(() => port.close()).catch(() => {});
+    }
+  }
+  // done with this pair: no more messages, and the ports are closed (after the last answer left)
+  close() {
+    if (this.closed) return;
+    this.closed = true;
+    this.input.onmidimessage = null;
+    releasePort(this.input); releasePort(this.output);
+  }
+}
+
+// a device that restarts: wait (at most ms) until the browser reports its ports as gone. Opening a port whose device
+// is leaving the USB has hung Chrome's MIDI on Windows (the whole browser), so nothing is probed before that
+async function gone(link, ms) {
+  const end = Date.now() + ms;
+  while (Date.now() < end && !link.lost) await sleep(100);
+  return link.lost;
 }
 
 async function handshake(link, tries = 3) {
@@ -161,22 +216,38 @@ export class Updater {
     this.log = log || (() => {});
     this.all = !!opts.all;
     this.said = new Set();
+    this.t = { ...TIMING, ...(opts.timing || {}) };
   }
 
   say(t) { if (!this.said.has(t)) { this.said.add(t); this.log(t); } }   // each port line once
 
-  // one input against its candidate outputs: the matching port first (same name, one name contains the other, or
-  // the same name without its in / out part, so input "Felucca" pairs with output "MIDIOUT2 (Felucca)" without
-  // probing unrelated outputs like "Microsoft GS Wavetable Synth"), then (the fallback) any live output. A pair
-  // counts only when it answers the FM-1 handshake and passes the filter.
-  async probe(input, outs, filter) {
-    if (input.state === "disconnected") return null;
-    const live = outs.filter((o) => o.state !== "disconnected");
-    const name = input.name || "";
-    const named = live.filter((o) => o.name === name || (name && o.name && (o.name.includes(name) || name.includes(o.name))) ||
-      (name && portBase(o.name || "") === portBase(name)));
-    for (const output of (named.length ? named : live)) {
-      try { await input.open(); await output.open(); } catch (_) { this.say(`port "${name}": cannot open (in use?)`); continue; }
+  // every in/out pair with the same port name that answers the handshake
+  // SLOOP Pro: deep (the update loader only, after its device left the USB): when no named port answered, the other
+  // ports too, taken only when they answer the handshake (Windows may name the loader generically, "USB MIDI Device")
+  async find(filter, deep = false) {
+    const dev = await this.find1(filter, false);
+    return dev || !deep || this.all ? dev : this.find1(filter, true);
+  }
+  async find1(filter, others) {
+    const outs = [...this.access.outputs.values()];
+    for (const input of this.access.inputs.values()) {
+      if (input.state !== "connected") continue;
+      const name = input.name || "";
+      if (/^MIDI(IN|OUT)\d+ \(/i.test(name)) { this.say(`port "${name}": a device's extra port, not probed`); continue; }
+      if (others ? PORT_RE.test(name) : (!this.all && !PORT_RE.test(name))) {
+        if (!others) this.say(`port "${name}": not probed`);
+        continue;
+      }
+      const output = outs.find((o) => o.name === input.name) ||
+        outs.find((o) => portBase(o.name || "") === portBase(name)) || (outs.length === 1 ? outs[0] : null);
+      if (!output) { this.say(`port "${name}": no output of that name`); continue; }
+      const oi = await openPort(input, this.t.open);
+      const oo = oi === true ? await openPort(output, this.t.open) : oi;
+      if (oo !== true) {
+        if (oi === true) releasePort(input, 0);
+        this.say(`port "${name}": ${oo === "timeout" ? `did not open within ${this.t.open / 1000} s (replug the cable, close other MIDI apps)` : "cannot open (in use?)"}`);
+        continue;
+      }
       const link = new Link(input, output);
       const id = await handshake(link, 2);
       this.say(`port "${name}" / "${output.name}": ${id ? id.text : "no answer"}`);
@@ -186,70 +257,65 @@ export class Updater {
     return null;
   }
 
-  // the FM-1 / SMK-37 (or its update loader) among the MIDI ports. Named ports first (fast, and other gear is
-  // never touched; opts.all: every port). With deep=true (hunting the re-enumerated update loader only), if no
-  // named port matched, the remaining ports are probed too and accepted SOLELY when they answer the handshake
-  // (other gear returns no valid identity). Windows often names the update loader generically (e.g.
-  // "USB MIDI Device"), so a name filter alone misses it and the loader seems to "not appear": this
-  // handshake fallback is what makes the loader reliably found, without probing other gear when looking
-  // for the running firmware (which always names itself).
-  async find(filter, deep = false) {
-    const outs = [...this.access.outputs.values()];
-    const inputs = [...this.access.inputs.values()].filter((i) => i.state !== "disconnected");
-    const named = (i) => this.all || PORT_RE.test(i.name || "");
-    for (const input of inputs)
-      if (named(input)) {
-        const dev = await this.probe(input, outs, filter);
+  // onTick(seconds waited): about once a second, for a live status; the deadline counts the probing too (a find()
+  // still running at the end is left to finish on its own; what it opens it closes again)
+  async waitFor(filter, ms, onTick, deep = false) {
+    const t0 = Date.now(), end = t0 + ms;
+    const timer = onTick ? setInterval(() => onTick(Math.round((Date.now() - t0) / 1000)), 1000) : null;
+    try {
+      while (Date.now() < end) {
+        const run = { gaveUp: false, got: null };
+        const dev = await within(this.find(filter, deep).then((d) => { if (run.gaveUp && d) d.link.close(); else run.got = d; return d; }),
+          Math.max(0, end - Date.now()), null);
         if (dev) return dev;
-      } else if (!deep) this.say(`port "${input.name || ""}": not probed`);
-    if (deep)
-      for (const input of inputs)
-        if (!named(input)) {
-          const dev = await this.probe(input, outs, filter);
-          if (dev) return dev;
-        }
-    return null;
-  }
-
-  // the MIDI inputs there are, for the "not found" message: " (MIDI: a, b)" (a port the installer skipped shows)
-  seen() {
-    const names = [...this.access.inputs.values()].filter((p) => p.state !== "disconnected").map((p) => p.name || "?");
-    return names.length ? ` (MIDI: ${names.join(", ")})` : " (MIDI: none)";
-  }
-
-  async waitFor(filter, ms, deep = false) {
-    const end = Date.now() + ms;
-    while (Date.now() < end) {
-      const dev = await this.find(filter, deep);
-      if (dev) return dev;
-      await sleep(1000);
-    }
-    return null;
+        run.gaveUp = true;
+        if (run.got) run.got.link.close();             // (it came in just as the time ran out)
+        if (Date.now() < end) await sleep(Math.min(1000, end - Date.now()));
+      }
+      return null;
+    } finally { if (timer) clearInterval(timer); }
   }
 
   // serve read requests until the device asks for one of the finish addresses; stops early
-  // when the port disappears (lost: true) instead of waiting out idleMs
-  async serve(link, image, finishAddr, idleMs, onProgress) {
-    let served = 0, last = Date.now();
+  // when the port disappears (lost: true) instead of waiting out idleMs. o: firstMs (no valid request at all by then:
+  // norequest; idleMs counts only from the first one), totalMs (a hard end: timeout), maxReq (more data requests:
+  // toomany, a device that loops), onWait(s) (no request yet, about once a second), resend (ms after the start with no
+  // request yet: UPGRADE again)
+  async serve(link, image, finishAddr, idleMs, onProgress, o = {}) {
+    const t0 = Date.now(), resend = [...(o.resend || [])];
+    let served = 0, seen = 0, last = t0, said = 0;
+    const out = (r) => {
+      if (link.dropped) this.log(`(${link.dropped} messages dropped: the device sent faster than they were read)`);
+      return { served, ...r };
+    };
     for (;;) {
-      const pkt = await link.read(1000);
+      const now = Date.now();
+      if (o.totalMs && now - t0 > o.totalMs) return out({ finished: false, timeout: true });
+      if (!seen) {
+        if (o.firstMs && now - t0 > o.firstMs) return out({ finished: false, norequest: true });
+        const s = Math.floor((now - t0) / 1000);
+        if (o.onWait && s > said) { said = s; o.onWait(s); }
+        if (resend.length && now - t0 >= resend[0]) { resend.shift(); this.log("no request yet: UPGRADE again"); link.send(UPGRADE); }
+      }
+      const pkt = await link.read(seen ? 1000 : 250);
       if (!pkt) {
-        if (link.lost) return { served, finished: false, lost: true };
-        if (Date.now() - last > idleMs) return { served, finished: false };
+        if (link.lost) return out({ finished: false, lost: true });
+        if ((seen || !o.firstMs) && Date.now() - last > idleMs) return out({ finished: false });
         continue;
       }
       const r = parseRequest(pkt);
       if (!r) continue;
-      last = Date.now();
+      seen++; last = Date.now();
       if (r.addr === 0xE0000000 || r.addr === 0xF0000000) {
         link.send(response(r.addr, [...new TextEncoder().encode("success"), 0]));
-        if (r.addr === finishAddr) return { served, finished: true };
+        if (r.addr === finishAddr) return out({ finished: true });
         continue;
       }
       if (r.len > MAXDATA || r.addr + r.len > image.length) throw fail("badreq", `bad request ${r.addr.toString(16)}+${r.len}`);
+      if (o.maxReq && served >= o.maxReq) return out({ finished: false, toomany: true });
       await sleep(10);
       if (!link.send(response(r.addr, Array.from(image.subarray(r.addr, r.addr + r.len)), r.fl))) {
-        return { served, finished: false, lost: true };
+        return out({ finished: false, lost: true });
       }
       served++;
       if (onProgress) onProgress(served, r.addr);
@@ -258,37 +324,58 @@ export class Updater {
 
   // full install: running firmware -> loader -> new firmware. anyModel: the package may be for another model of the
   // same keyboard (an SMK-37 Elite package on a unit that reports SMK-37 Pro); never an FM-1 one on an SMK, nor back
+  // opts.refuseOldStock: an M-Vave SMK firmware before V016 is refused before anything is sent (for our packages, not
+  // the return to the official firmware), also when the page did not identify the keyboard first
   async install(image, product, onStep, anyModel = false, opts = {}) {
-    const step = onStep || (() => {});
+    const step = onStep || (() => {}), t = this.t;
     const dev = await this.find((id) => !IS_OTA(id));
-    if (!dev) throw fail("notfound", "FM-1 not found (USB cable, and no other app using it?)", this.seen());
+    if (!dev) throw fail("notfound", "FM-1 not found (USB cable, and no other app using it?)");
     if (OTHER_SMK(dev.id)) { dev.link.close(); throw fail("other", `the keyboard runs a firmware with its own updater (${dev.id.text}): nothing was sent`, dev.id.text); }
-    const [model] = product.split("_");
+    if (opts.refuseOldStock && OLD_STOCK(dev.id)) {
+      dev.link.close();
+      throw fail("oldstock", `the keyboard runs M-Vave's firmware ${dev.id.text}: update it to V016 with M-Vave's updater first. Nothing was sent.`, dev.id.text);
+    }
     const refusal = boardRefusal(dev.id.model, image, opts.fm1Confirmed);   // (the package's board, before anything)
     if (refusal) { dev.link.close(); throw refusal; }
+    const [model] = product.split("_");
     if (dev.id.model !== model && !(anyModel && sameKeyboard(dev.id.model, model))) { dev.link.close(); throw fail("model", `the device is ${dev.id.text}, the package is for ${product}`); }
     step("start", dev.id.text);
     dev.link.send(UPGRADE);
-    await sleep(2000);
-    const s1 = await this.serve(dev.link, image, 0xE0000000, 8000, (n) => step("verify", n));
-    dev.link.close();
+    const t1 = Date.now();
+    await sleep(t.settle);
+    const s1 = await this.serve(dev.link, image, 0xE0000000, t.step1Idle, (n) => step("verify", n), { totalMs: t.step1Total });
+    if (s1.finished) { await sleep(40); dev.link.closeNow(); }              // (it restarts into its loader now: close
+    else if (s1.lost) dev.link.detach(); else dev.link.close();             //  before it leaves the USB)
+    this.log(`step 1: ${s1.served} requests in ${Math.round((Date.now() - t1) / 1000)} s: ${outcome(s1)}`);
+    if (s1.timeout) throw fail("timeout", `the keyboard's check of the package did not finish within ${t.step1Total / 1000} s (${s1.served} requests): nothing was written. Switch it off and on.`);
     // some firmwares restart into their loader at once, without step 1: such a loader (ours, of this keyboard) goes on
     const jumped = !s1.finished && s1.lost && s1.served === 0;
     if (!s1.finished && !jumped) throw fail(s1.lost ? "lost" : "stopped", `the device ${s1.lost ? "was disconnected" : "stopped"} after ${s1.served} requests: nothing was written`);
     step("loader");
-    await sleep(3000);
-    const ota = await this.waitFor(IS_OTA, jumped ? 15000 : 60000, true);
+    await gone(dev.link, 15000);                       // never probe a port while its device is still leaving the USB
+    await sleep(t.reboot);
+    const wait = jumped ? t.jumped : t.loader;
+    const ota = await this.waitFor(IS_OTA, wait, (s) => step("wait", s + Math.round(t.reboot / 1000)), true);
     if (jumped && !(ota && OUR_LOADER(ota.id) && sameKeyboard(ota.id.model.replace(/^ota-/i, ""), dev.id.model))) {
       if (ota) ota.link.close();
       throw fail(ota ? "foreign" : "lost", ota ? `the device restarted into the update mode of another firmware (${ota.id.text}): nothing was written`
         : "the device was disconnected after 0 requests: nothing was written", ota ? ota.id.text : "");
     }
-    if (!ota) throw fail("noloader", "the update loader did not appear. Replug the USB cable and press Install again: the device stays in update mode until it is finished.", this.seen());
+    if (!ota) throw fail("noloader", `the update loader did not appear within ${Math.round((wait + t.reboot) / 1000)} s. Close Chrome, open this page again, press Connect and the Install or Repair button again: it goes on where it stopped.`);
+    // one of our packages goes only to our loader, of this keyboard: never into another firmware's (the official one
+    // lays the image out its own way). An official package (identity _0NN, the way back) keeps the path it had.
+    const official = /_0\d\d$/.test(product);
+    if (!official && !(OUR_LOADER(ota.id) && sameKeyboard(ota.id.model.replace(/^ota-/i, ""), dev.id.model))) {
+      ota.link.close();
+      throw fail("foreign", `the device started the update mode of another firmware (${ota.id.text}): nothing was written. Switch it off and on.`, ota.id.text);
+    }
     const s2 = await this.write(ota, image, step);
-    if (!s2.finished) throw fail(s2.lost ? "lost" : "stopped", `the loader ${s2.lost ? "was disconnected" : "stopped"} after ${s2.served} requests. Replug and press Install again to resume.`);
+    if (!s2.finished) throw this.writeFail(s2);
+    step("written");
     step("reboot");
-    await sleep(3000);
-    const back = await this.waitFor((id) => !IS_OTA(id), 60000);
+    await gone(ota.link, 15000);
+    await sleep(t.reboot);
+    const back = await this.waitFor((id) => !IS_OTA(id), t.back, (s) => step("back", s));
     if (!back) throw fail("noreturn", "the device did not come back: power-cycle it");
     back.link.close();
     if (back.id.text !== product) throw fail("mismatch", `installed, but the device reports ${back.id.text}`, back.id.text);
@@ -296,13 +383,27 @@ export class Updater {
     return back.id.text;
   }
 
-  // step 2 with the loader found by find()/waitFor()
+  // step 2 with the loader found by find()/waitFor(): the loader must ask within firstReq (our loader gets UPGRADE
+  // again meanwhile); the long idle timeout only once it writes; never more requests than three passes of the image
   async write(ota, image, step) {
+    const t = this.t;
+    step = step || (() => {});
+    this.log(`loader ${ota.id.text} on "${ota.name}"`);
     ota.link.send(UPGRADE);
-    await sleep(2000);
-    const s2 = await this.serve(ota.link, image, 0xF0000000, 180000, (n) => step("write", n));
-    ota.link.close();
+    const t2 = Date.now();
+    const s2 = await this.serve(ota.link, image, 0xF0000000, t.idle, (n) => step("write", n), {
+      firstMs: t.firstReq, maxReq: 3 * Math.ceil(image.length / MAXDATA) + 64,
+      resend: OUR_LOADER(ota.id) ? t.resend : [], onWait: (s) => { if (s >= 3) step("noreq", s); } });
+    if (s2.finished || s2.lost) ota.link.detach(); else ota.link.close();   // (finished: it restarts into the new firmware)
+    this.log(`step 2: ${s2.served} requests in ${Math.round((Date.now() - t2) / 1000)} s: ${outcome(s2)}`);
     return s2;
+  }
+
+  // the error for a write that did not finish
+  writeFail(s2) {
+    if (s2.norequest) return fail("norequest", `the update loader appeared but did not ask for data within ${this.t.firstReq / 1000} s: nothing was written. Replug the USB cable and press Install again.`);
+    if (s2.toomany) return fail("toomany", `the loader kept asking (${s2.served} requests, more than a write needs): stopped. Replug and press Install again.`);
+    return fail(s2.lost ? "lost" : "stopped", `the loader ${s2.lost ? "was disconnected" : "stopped"} after ${s2.served} requests. Replug and press Install again to resume.`);
   }
 
   // resume: the device is already in update mode (loader) -> true when the write finished. Only SLOOP's
@@ -311,6 +412,8 @@ export class Updater {
   // loader's own image, as M-UPGRADE would write it. opts.package: the identity of the package being
   // written; the loader's model must match it (or opts.product's) by install()'s rule (the same model, or with
   // opts.anyModel another model of the same keyboard), and without either identity nothing is written
+  // SLOOP Pro: opts.verify (with opts.package): after the write, the keyboard is waited for and its identity checked,
+  // as install() does (resolves to the identity)
   async resume(image, onStep, opts = {}) {
     const ota = await this.find(IS_OTA, true);
     if (!ota) return false;
@@ -327,11 +430,25 @@ export class Updater {
       throw fail("model", `the device is in the update mode of ${ota.id.text}, the package is for ${want || "an unknown model"}`, ota.id.text);
     }
     const step = onStep || (() => {});
-    if (!(await this.write(ota, image, step)).finished) return false;
+    const s2 = await this.write(ota, image, step);
+    if (!s2.finished) { if (s2.norequest || s2.toomany) throw this.writeFail(s2); return false; }
+    step("written");
+    if (opts.verify && !opts.product) {
+      step("reboot");
+      await gone(ota.link, 15000);
+      await sleep(this.t.reboot);
+      const back = await this.waitFor((id) => !IS_OTA(id), this.t.back, (s) => step("back", s));
+      if (!back) throw fail("noreturn", "the keyboard did not come back after the write: switch it off and on");
+      back.link.close();
+      if (back.id.text !== want) throw fail("mismatch", `written, but the keyboard reports ${back.id.text}`, back.id.text);
+      step("done", back.id.text);
+      return back.id.text;
+    }
     if (opts.product) {
       step("reboot");
-      await sleep(3000);
-      const back = await this.waitFor((id) => !IS_OTA(id), 60000);
+      await gone(ota.link, 15000);
+      await sleep(this.t.reboot);
+      const back = await this.waitFor((id) => !IS_OTA(id), this.t.back, (s) => step("back", s));
       if (!back) throw fail("noreturn", "the FM-1 did not come back after the write: power-cycle it");
       back.link.close();
       if (back.id.text !== opts.product) throw fail("mismatch", `written, but the FM-1 reports ${back.id.text}`, back.id.text);
@@ -339,6 +456,24 @@ export class Updater {
     }
     return true;
   }
+}
+
+export const FM1_PORT = PORT_RE;   // (the older name, for the pages and tests that import it)
+
+// SLOOP Pro: one package per model (SMK-37 Pro, SMK-37 Elite, MKE-P37). The one for the connected keyboard, from its
+// identity (running, or its update loader's): the same model by name -> { product, anyModel: false }; a Starrykey 37
+// Play or an SMK-37 that does not name its model ("SMK-37+VA") -> the SMK-37 Pro one, { anyModel: true }; an FM-1,
+// another device or ChanceTheMaker's SMK firmwares ("SMK-37_9NN", their own updater) -> null (as fm1_install.py
+// pick_package)
+export function pickPackage(deviceText, products) {
+  if (OTHER_SMK({ text: deviceText })) return null;
+  const dm = deviceText.split("_")[0].replace(/^ota-/i, "").toLowerCase();
+  const same = products.find((p) => p.split("_")[0].toLowerCase() === dm);
+  if (same) return { product: same, anyModel: false };
+  const kin = products.filter((p) => sameKeyboard(dm.toUpperCase(), p.split("_")[0]));
+  const pro = kin.find((p) => /^SMK-37 Pro_/i.test(p));
+  if (pro) return { product: pro, anyModel: true };
+  return kin.length === 1 ? { product: kin[0], anyModel: true } : null;
 }
 
 // ---- the package's board: read from the package itself, never from an identity ----

@@ -258,6 +258,212 @@ class MidoLink:
                 pass
 
 
+class WinmmLink:
+    """one MIDI in/out pair over Windows' own MIDI API (winmm.dll, through ctypes): nothing to install, nothing to
+    compile (python-rtmidi has no Windows wheel for Python 3.13 and newer). SysEx in: NBUF buffers handed to the
+    driver, polled for MHDR_DONE (CALLBACK_NULL: no WinMM call from a driver callback), re-armed after each; the
+    messages are put together from F0 to F7 across buffers. SysEx out: one header, waited for (MHDR_DONE)."""
+    NBUF, BUFSZ = 16, 4096
+
+    def __init__(self, backend, in_name, out_name):
+        self.b, self.w, self.name = backend, backend.w, in_name
+        self.q, self.part, self.hin, self.hout, self.bufs = queue.Queue(), bytearray(), None, None, []
+        ct = backend.ct
+        hin = ct.c_void_p()
+        r = self.w.midiInOpen(ct.byref(hin), backend.in_id(in_name), 0, 0, 0)
+        if r:
+            raise IOError(f"midiInOpen {in_name!r}: error {r}" + (" (the port is in use: close Chrome / Edge and "
+                                                                    "other MIDI apps)" if r == 4 else ""))
+        self.hin = hin.value                          # (the handle as a number: hashable, falsy when null)
+        try:
+            for _ in range(self.NBUF):
+                data = ct.create_string_buffer(self.BUFSZ)
+                h = backend.MIDIHDR()
+                h.lpData = ct.cast(data, ct.c_void_p)
+                h.dwBufferLength = self.BUFSZ
+                self.bufs.append((data, h))
+                self._arm(h, first=True)
+            self.w.midiInStart(self.hin)
+            hout = ct.c_void_p()
+            r = self.w.midiOutOpen(ct.byref(hout), backend.out_id(out_name), 0, 0, 0)
+            if r:
+                raise IOError(f"midiOutOpen {out_name!r}: error {r}" + (" (the port is in use: close Chrome / Edge "
+                                                                         "and other MIDI apps)" if r == 4 else ""))
+            self.hout = hout.value
+        except Exception:
+            self.close()
+            raise
+        time.sleep(DELAY["open"])
+
+    def _arm(self, h, first=False):
+        ct, sz = self.b.ct, self.b.ct.sizeof(self.b.MIDIHDR)
+        if not first:
+            self.w.midiInUnprepareHeader(self.hin, ct.byref(h), sz)
+        h.dwBytesRecorded = 0
+        h.dwFlags = 0
+        self.w.midiInPrepareHeader(self.hin, ct.byref(h), sz)
+        self.w.midiInAddBuffer(self.hin, ct.byref(h), sz)
+
+    def _poll(self):
+        # the driver fills the buffers in the order they were handed to it: taken in that order (a SysEx split
+        # across buffers comes back together), each handed back at the end of the queue
+        while self.bufs and self.bufs[0][1].dwFlags & 1:  # MHDR_DONE: filled (or returned by a reset)
+            data, h = self.bufs.pop(0)
+            n = h.dwBytesRecorded
+            if n:
+                self._take(data.raw[:n])
+            self.bufs.append((data, h))
+            if self.hin:
+                self._arm(h)
+
+    def _take(self, chunk):
+        for c in chunk:
+            if c == 0xF0:
+                self.part = bytearray([c])
+            elif self.part:
+                if c >= 0xF8:                         # (realtime bytes inside a SysEx: not part of it)
+                    continue
+                self.part.append(c)
+                if c == 0xF7:
+                    self.q.put(bytes(self.part))
+                    self.part = bytearray()
+                elif len(self.part) > 65536:
+                    self.part = bytearray()
+
+    @property
+    def lost(self):
+        return self.name not in self.b.input_names()
+
+    def send(self, pkt):
+        ct, sz = self.b.ct, self.b.ct.sizeof(self.b.MIDIHDR)
+        if not self.hout:
+            return False
+        data = ct.create_string_buffer(bytes(pkt), len(pkt))
+        h = self.b.MIDIHDR()
+        h.lpData = ct.cast(data, ct.c_void_p)
+        h.dwBufferLength = len(pkt)
+        if self.w.midiOutPrepareHeader(self.hout, ct.byref(h), sz):
+            return False
+        ok = self.w.midiOutLongMsg(self.hout, ct.byref(h), sz) == 0
+        end = time.monotonic() + 2.0
+        while ok and not (h.dwFlags & 1) and time.monotonic() < end:
+            time.sleep(0.001)
+        ok = ok and bool(h.dwFlags & 1)
+        for _ in range(100):                          # (still playing: MIDIERR_STILLPLAYING 65)
+            if self.w.midiOutUnprepareHeader(self.hout, ct.byref(h), sz) != 65:
+                break
+            time.sleep(0.01)
+        return ok
+
+    def read(self, timeout):
+        end = time.monotonic() + max(timeout, 0)
+        while True:
+            self._poll()
+            try:
+                return self.q.get_nowait()
+            except queue.Empty:
+                pass
+            if time.monotonic() >= end:
+                return None
+            time.sleep(0.001)
+
+    def drain(self):
+        self._poll()
+        while not self.q.empty():
+            self.q.get_nowait()
+
+    def close(self):
+        ct = self.b.ct
+        sz = ct.sizeof(self.b.MIDIHDR)
+        try:
+            if self.hin:
+                hin, self.hin = self.hin, None
+                self.w.midiInStop(hin)
+                self.w.midiInReset(hin)               # (gives every buffer back)
+                for _, h in self.bufs:
+                    self.w.midiInUnprepareHeader(hin, ct.byref(h), sz)
+                self.w.midiInClose(hin)
+        except Exception:
+            pass
+        try:
+            if self.hout:
+                hout, self.hout = self.hout, None
+                self.w.midiOutReset(hout)
+                self.w.midiOutClose(hout)
+        except Exception:
+            pass
+
+
+class WinmmBackend:
+    """Windows: the MIDI ports through winmm.dll (no mido, no python-rtmidi). Port names as Windows gives them; a
+    name given twice gets " #2", " #3" (as the order Windows lists them)"""
+
+    def __init__(self, dll=None):
+        import ctypes
+        self.ct = ctypes
+        self.w = dll if dll is not None else ctypes.WinDLL("winmm")
+
+        class MIDIHDR(ctypes.Structure):
+            _fields_ = [("lpData", ctypes.c_void_p), ("dwBufferLength", ctypes.c_uint32),
+                        ("dwBytesRecorded", ctypes.c_uint32), ("dwUser", ctypes.c_size_t),
+                        ("dwFlags", ctypes.c_uint32), ("lpNext", ctypes.c_void_p), ("reserved", ctypes.c_size_t),
+                        ("dwOffset", ctypes.c_uint32), ("dwReserved", ctypes.c_size_t * 8)]
+
+        class MIDIINCAPSW(ctypes.Structure):
+            _fields_ = [("wMid", ctypes.c_uint16), ("wPid", ctypes.c_uint16), ("vDriverVersion", ctypes.c_uint32),
+                        ("szPname", ctypes.c_wchar * 32), ("dwSupport", ctypes.c_uint32)]
+
+        class MIDIOUTCAPSW(ctypes.Structure):
+            _fields_ = [("wMid", ctypes.c_uint16), ("wPid", ctypes.c_uint16), ("vDriverVersion", ctypes.c_uint32),
+                        ("szPname", ctypes.c_wchar * 32), ("wTechnology", ctypes.c_uint16),
+                        ("wVoices", ctypes.c_uint16), ("wNotes", ctypes.c_uint16),
+                        ("wChannelMask", ctypes.c_uint16), ("dwSupport", ctypes.c_uint32)]
+        self.MIDIHDR, self.INCAPS, self.OUTCAPS = MIDIHDR, MIDIINCAPSW, MIDIOUTCAPSW
+        vp, u = ctypes.c_void_p, ctypes.c_uint
+        for fn, args in (("midiInOpen", [ctypes.POINTER(vp), u, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_uint32]),
+                         ("midiOutOpen", [ctypes.POINTER(vp), u, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_uint32]),
+                         ("midiInPrepareHeader", [vp, vp, u]), ("midiInUnprepareHeader", [vp, vp, u]),
+                         ("midiInAddBuffer", [vp, vp, u]), ("midiOutPrepareHeader", [vp, vp, u]),
+                         ("midiOutUnprepareHeader", [vp, vp, u]), ("midiOutLongMsg", [vp, vp, u]),
+                         ("midiInStart", [vp]), ("midiInStop", [vp]), ("midiInReset", [vp]), ("midiInClose", [vp]),
+                         ("midiOutReset", [vp]), ("midiOutClose", [vp]),
+                         ("midiInGetDevCapsW", [ctypes.c_size_t, vp, u]), ("midiOutGetDevCapsW", [ctypes.c_size_t, vp, u])):
+            try:
+                f = getattr(self.w, fn)
+                f.argtypes, f.restype = args, u
+            except (AttributeError, TypeError):
+                pass
+
+    def _names(self, out):
+        n = (self.w.midiOutGetNumDevs if out else self.w.midiInGetNumDevs)()
+        caps_t = self.OUTCAPS if out else self.INCAPS
+        get = self.w.midiOutGetDevCapsW if out else self.w.midiInGetDevCapsW
+        names, seen = [], {}
+        for i in range(n):
+            c = caps_t()
+            if get(i, self.ct.byref(c), self.ct.sizeof(c)):
+                continue
+            nm = c.szPname
+            seen[nm] = seen.get(nm, 0) + 1
+            names.append((nm if seen[nm] == 1 else f"{nm} #{seen[nm]}", i))
+        return names
+
+    def input_names(self):
+        return [nm for nm, _ in self._names(False)]
+
+    def output_names(self):
+        return [nm for nm, _ in self._names(True)]
+
+    def in_id(self, name):
+        return dict(self._names(False))[name]
+
+    def out_id(self, name):
+        return dict(self._names(True))[name]
+
+    def open(self, in_name, out_name):
+        return WinmmLink(self, in_name, out_name)
+
+
 class MidoBackend:
     def __init__(self):
         import mido
@@ -273,6 +479,13 @@ class MidoBackend:
         return MidoLink(self, in_name, out_name)
 
 
+def port_base(n):
+    """a port name without its in / out part ("MIDIIN2 (X)" / "MIDIOUT2 (X)", "X 1", "X In"), as web/fm1ota.js portBase"""
+    n = re.sub(r"^MIDI(?:IN|OUT)(\d*) \((.*)\)$", r"\2 \1", n, flags=re.I)
+    n = re.sub(r"\s+\d+$", "", n.strip())
+    return re.sub(r"[ -](?:in|out|input|output)$", "", n, flags=re.I).strip().lower()
+
+
 def pair_output(name, outs):
     if name in outs:
         return name
@@ -280,6 +493,12 @@ def pair_output(name, outs):
     same = [o for o in outs if re.sub(r"\s+\d+$", "", o) == base]
     if len(same) == 1:
         return same[0]
+    def pair(n):                               # MIDIIN2 (X) / MIDIOUT2 (X): "x 2"
+        return re.sub(r"^MIDI(?:IN|OUT)(\d*) \((.*)\)$", r"\2 \1", n, flags=re.I).strip().lower()
+    for key in (pair, port_base):
+        same = [o for o in outs if key(o) == key(name)]
+        if len(same) == 1:
+            return same[0]
     return outs[0] if len(outs) == 1 else None
 
 
@@ -742,10 +961,15 @@ def main(argv=None, backend=None, out=sys.stdout, ask=ask_tty):
         ap.error("give a PACKAGE.fwsc or --info")
     try:
         if backend is None:
-            try:
-                backend = MidoBackend()
-            except ImportError:
-                raise InstallError("usage", "needs mido and python-rtmidi (pip install mido python-rtmidi)")
+            import os
+            if os.name == "nt" and os.environ.get("FM1_MIDI", "winmm") != "mido":
+                backend = WinmmBackend()           # Windows: its own MIDI API, nothing to install (FM1_MIDI=mido: mido)
+            else:
+                try:
+                    import rtmidi  # noqa: F401
+                    backend = MidoBackend()
+                except ImportError:
+                    raise InstallError("usage", "needs mido and python-rtmidi (pip install mido python-rtmidi)")
         return run(a, backend, out, ask)
     except InstallError as e:
         print(f"error: {e}", file=sys.stderr)

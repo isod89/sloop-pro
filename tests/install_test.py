@@ -510,6 +510,182 @@ def sloop_pro():
     ok(rc == 6 and dev.upgrades == 0, "SLOOP Pro packages on an FM-1: exit 6, nothing sent")
 
 
+class FakeWinmm:
+    """winmm.dll as the installer's WinmmBackend calls it (ctypes structures by reference), over a FakeFM1: SysEx in
+    handed out in small pieces across the buffers (as a driver may), buffers re-armed, the port list following the
+    device (it disappears and comes back with another name)"""
+
+    def __init__(self, dev, chunk=7):
+        import ctypes
+        self.ct, self.dev, self.chunk = ctypes, dev, chunk
+        self.h, self.next = {}, 1
+        self.extra = ["Microsoft GS Wavetable Synth"]          # (an output only, as on Windows)
+
+    def _list(self, out):
+        return self.dev.input_names() + (self.extra if out else [])
+
+    def midiInGetNumDevs(self):
+        return len(self._list(False))
+
+    def midiOutGetNumDevs(self):
+        return len(self._list(True))
+
+    def _caps(self, i, ref, out):
+        names = self._list(out)
+        if i >= len(names):
+            return 2
+        ref._obj.szPname = names[i]
+        return 0
+
+    def midiInGetDevCapsW(self, i, ref, sz):
+        return self._caps(i, ref, False)
+
+    def midiOutGetDevCapsW(self, i, ref, sz):
+        return self._caps(i, ref, True)
+
+    def _open(self, ph, i, out):
+        names = self._list(out)
+        if i >= len(names) or names[i] in self.extra:
+            return 2
+        try:
+            link = self.dev.open(names[i], names[i])
+        except IOError:
+            return 2
+        k = self.next
+        self.next += 1
+        self.h[k] = {"link": link, "bufs": [], "pend": b"", "out": out}
+        ph._obj.value = k
+        return 0
+
+    def midiInOpen(self, ph, i, cb, inst, flags):
+        return self._open(ph, i, False)
+
+    def midiOutOpen(self, ph, i, cb, inst, flags):
+        return self._open(ph, i, True)
+
+    def _feed(self, k):
+        e = self.h.get(k)
+        if not e:
+            return
+        while True:
+            if not e["pend"]:
+                try:
+                    e["pend"] = e["link"].q.get_nowait()
+                except queue.Empty:
+                    return
+            if not e["bufs"]:
+                return
+            hdr = e["bufs"].pop(0)
+            piece, e["pend"] = e["pend"][:self.chunk], e["pend"][self.chunk:]
+            self.ct.memmove(hdr.lpData, piece, len(piece))
+            hdr.dwBytesRecorded = len(piece)
+            hdr.dwFlags |= 1
+
+    def midiInPrepareHeader(self, h, ref, sz):
+        ref._obj.dwFlags |= 2
+        return 0
+
+    def midiInUnprepareHeader(self, h, ref, sz):
+        ref._obj.dwFlags &= ~2
+        return 0
+
+    def midiInAddBuffer(self, h, ref, sz):
+        e = self.h.get(h)
+        if not e:
+            return 5
+        ref._obj.dwFlags &= ~1
+        e["bufs"].append(ref._obj)
+        return 0
+
+    def midiInStart(self, h):
+        return 0
+
+    def midiInStop(self, h):
+        return 0
+
+    def midiInReset(self, h):
+        e = self.h.get(h)
+        for hdr in (e["bufs"] if e else []):
+            hdr.dwFlags |= 1
+        if e:
+            e["bufs"] = []
+        return 0
+
+    def midiInClose(self, h):
+        e = self.h.pop(h, None)
+        if e:
+            e["link"].close()
+        return 0
+
+    def midiOutPrepareHeader(self, h, ref, sz):
+        ref._obj.dwFlags |= 2
+        return 0
+
+    def midiOutUnprepareHeader(self, h, ref, sz):
+        return 0
+
+    def midiOutLongMsg(self, h, ref, sz):
+        e = self.h.get(h)
+        if not e:
+            return 5
+        data = self.ct.string_at(ref._obj.lpData, ref._obj.dwBufferLength)
+        if not e["link"].send(data):
+            return 5
+        ref._obj.dwFlags |= 1
+        return 0
+
+    def midiOutReset(self, h):
+        return 0
+
+    def midiOutClose(self, h):
+        return self.midiInClose(h)
+
+
+def winmm():
+    """Windows' own MIDI API (no mido, no python-rtmidi): the whole install on a simulated SMK-37 through a fake
+    winmm.dll; SysEx arriving in pieces; the update loader under another port name"""
+    image = I.logical_image(package("SMK-37 Pro_900"))
+    p = pkgfile("winmm.fwsc", package("SMK-37 Pro_900"))
+    dev = FakeFM1(image, identity="SMK-37 Pro_016", name="SMK-37 Pro Midi", after_write="SMK-37 Pro_900",
+                  loader=("ota-SMK-37 Pro_900", "USB MIDI Device"))
+    fake = FakeWinmm(dev)
+    stop = threading.Event()
+
+    def pump():                                    # the driver filling the buffers
+        while not stop.is_set():
+            for k in list(fake.h):
+                fake._feed(k)
+            time.sleep(0.0005)
+    t = threading.Thread(target=pump, daemon=True)
+    t.start()
+    try:
+        b = I.WinmmBackend(dll=fake)
+        ok(b.input_names() == ["SMK-37 Pro Midi"] and "Microsoft GS Wavetable Synth" in b.output_names(),
+           "winmm: the ports by name (inputs, outputs)")
+        rc, out, err = cli([p, "--yes"], dev) if False else (None, None, None)
+        o, e = io.StringIO(), io.StringIO()
+        old, sys.stderr = sys.stderr, e
+        try:
+            rc = I.main([p, "--yes"], backend=b, out=o, ask=lambda _p: True)
+        finally:
+            sys.stderr = old
+        ok(rc == 0 and dev.bad == 0 and dev.upgrades == 2 and "runs SMK-37 Pro_900" in o.getvalue(),
+           "winmm: install on an SMK-37 Pro (SysEx in 7-byte pieces, the loader as 'USB MIDI Device')")
+        ok(not fake.h, "winmm: every port closed at the end")
+        dev2 = FakeFM1(image, identity="ota-SMK-37 Pro_900", name="USB MIDI Device", after_write="SMK-37 Pro_900")
+        fake.dev = dev2
+        o = io.StringIO()
+        rc = I.main([p, "--yes"], backend=I.WinmmBackend(dll=fake), out=o, ask=lambda _p: True)
+        ok(rc == 0 and dev2.bad == 0 and dev2.upgrades == 1, "winmm: left in update mode: the write finished")
+    finally:
+        stop.set()
+        t.join(1)
+    ok(I.pair_output("MIDIIN2 (SMK-37 Pro Midi)", ["Microsoft GS Wavetable Synth", "MIDIOUT2 (SMK-37 Pro Midi)",
+                                                   "SMK-37 Pro Midi"]) == "MIDIOUT2 (SMK-37 Pro Midi)"
+       and I.pair_output("SMK-37 Pro Midi", ["SMK-37 Pro Midi", "MIDIOUT2 (SMK-37 Pro Midi)"]) == "SMK-37 Pro Midi",
+       "Windows port names: MIDIIN2 (X) pairs with MIDIOUT2 (X), X with X")
+
+
 wire()
 installs()
 errors()
@@ -517,6 +693,7 @@ smk()
 boards()
 against_js()
 sloop_pro()
+winmm()
 shutil.rmtree(TMP, ignore_errors=True)
 # the SMK-37 Pro, Elite and MKE-P37 are one keyboard: packages install across them, never across FM-1 / SMK
 ok(I.same_keyboard("SMK-37 Elite_016", "SMK-37 Pro_900") and I.same_keyboard("ota-MKE-P37_900", "SMK-37 Elite_900")

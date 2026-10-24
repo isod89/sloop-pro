@@ -49,7 +49,7 @@ pendant son redémarrage) : fermer **complètement** Chrome / Edge, débrancher 
 et vérifie le clavier à la fin. (Le clavier n'a rien perdu : tant que l'écriture n'a pas commencé, il revient à son
 firmware d'origine en le rallumant.)
 
-Ligne de commande (la même chose) : `python tools\fm1_install.py build\release\` (`pip install mido python-rtmidi`).
+Ligne de commande (la même chose) : `python tools\fm1_install.py build\release\` (Windows : rien à installer ; Linux / macOS : `pip install mido python-rtmidi`).
 
 ## 4. Sauvegarde complète de la flash (une fois, tout de suite après)
 

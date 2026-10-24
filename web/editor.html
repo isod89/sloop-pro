@@ -4646,7 +4646,7 @@ const THEME = {
  * first firmware they saw ("X0X FM-1", "USB-MIDI"…): the names the installer accepts (fm1ota.js PORT_RE, the same
  * list), as in/out pairs of one name, "Felucca" / "SLOOP" first, then FM-1, then the generic names. connect() keeps the
  * first pair that answers INFO, so a generic name of other gear is tried and left */
-const FM1_PORT = /fm-1|smk|elite|mke-p37|starry|felucca|sloop|clipper|melodee|fomni|x0x|makkuro|maku|rainbow|snoop|vector|vox|ota|composite|sinco|usb-midi/i;
+const FM1_PORT = /fm-1|smk|speak|dub|elite|mke-p37|starry|felucca|sloop|clipper|melodee|fomni|x0x|makkuro|maku|rainbow|amb-1|choral|orbit|snoop|vector|vox|gen37|ota|composite|sinco|usb-midi/i;
 function fm1Ports(access) {
   const live = (p) => p.state !== "disconnected" && FM1_PORT.test(p.name || "");
   const ins = [...access.inputs.values()].filter(live), outs = [...access.outputs.values()].filter(live);

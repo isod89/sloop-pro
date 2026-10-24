@@ -181,7 +181,7 @@ async function runPage(dev, { model = "auto", risk = true, tamper = null, lang =
     document: doc, window: win, location: { protocol: "file:" }, fetch: fetchFile, crypto: webcrypto, self: { crypto: webcrypto },
     navigator: { language: lang, requestMIDIAccess: async () => dev.access },
     localStorage: { getItem: () => null, setItem: () => {} },
-    setTimeout, clearTimeout, console, TextEncoder, TextDecoder, Uint8Array, Promise, Date, Math, JSON, Error, Map, Set,
+    setTimeout, clearTimeout, setInterval, clearInterval, console, TextEncoder, TextDecoder, Uint8Array, Promise, Date, Math, JSON, Error, Map, Set,
   });
   vm.runInContext(script, ctx);
   for (let i = 0; i < 250 && !/Ready|Prêt|準備|damaged|endommagé|壊れ|load|Chargement/.test(el("status").textContent); i++) await sleep(20);

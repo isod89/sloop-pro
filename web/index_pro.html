@@ -132,6 +132,7 @@ const TEXT = {
     other2: "Clavier sous le firmware « Sloop SMK » de ChanceTheMaker (identité SMK-37_9xx) ? Il n'accepte que ses propres paquets : revenez d'abord au firmware M-VAVE (sa page de restauration ou M-UPGRADE), puis installez SLOOP Pro.",
     nomidi: "Ce navigateur ne peut pas le faire. Ouvrez la page dans Chrome ou Edge.", loadfail: "Chargement impossible : ",
     ready: "Prêt : SLOOP Pro ", start: "Démarrage", verify: "Vérification", loader: "Passage en mode mise à jour", write: "Écriture",
+    waitota: "Le clavier redémarre en mode mise à jour (ne rien débrancher)… s : ", noreq: "Le mode mise à jour ne demande rien encore… s : ", backwait: "Redémarrage… s : ",
     reboot: "Redémarrage", done: "Terminé : le clavier tourne ", stopped: "Arrêté. Rebranchez le câble USB et appuyez de nouveau sur Installer.",
     error: "Erreur : ", needRisk: "Cochez d'abord la case ci-dessus.",
     denied: "L'accès MIDI (SysEx) a été refusé. Autorisez le MIDI dans les paramètres du site (barre d'adresse) et réessayez.",
@@ -145,6 +146,10 @@ const TEXT = {
     noreturn: "Le clavier n'est pas revenu. Éteignez-le et rallumez-le.",
     mismatch: "Écrit, mais le clavier annonce une autre version : ",
     foreign: "Le clavier est en mode mise à jour d'un autre firmware. Terminez cette mise à jour avec son propre outil (M-UPGRADE), puis réessayez : ",
+    oldstock: "Ce clavier a un firmware M-VAVE plus ancien que V016 : mettez-le d'abord à jour en V016 avec M-UPGRADE. Rien n'a été envoyé : ",
+    timeout: "La vérification du paquet par le clavier n'a pas fini à temps : rien n'a été écrit. Éteignez-le et rallumez-le, puis réessayez.",
+    norequest: "Le mode mise à jour est apparu mais n'a rien demandé : rien n'a été écrit. Rebranchez le câble et réessayez.",
+    toomany: "Le clavier redemandait sans fin : arrêté. Rebranchez le câble et réessayez.",
     badreq: "Le clavier a demandé des données hors du paquet : arrêté. Rechargez la page et réessayez : ",
     fm1confirm: "Ce paquet est pour le FM-1 : rien n'a été écrit.",
     fm1pkg: "Ce paquet est pour le FM-1 : rien n'a été écrit.", board: "Ce paquet n'est pas pour cette carte : rien n'a été écrit.",
@@ -173,6 +178,7 @@ const TEXT = {
     other2: "Keyboard running ChanceTheMaker's “Sloop SMK” (identity SMK-37_9xx)? It takes only its own packages: go back to the M-VAVE firmware first (its restore page or M-UPGRADE), then install SLOOP Pro.",
     nomidi: "This browser cannot do it. Open the page in Chrome or Edge.", loadfail: "Could not load: ",
     ready: "Ready: SLOOP Pro ", start: "Starting", verify: "Verifying", loader: "Switching to update mode", write: "Writing",
+    waitota: "The keyboard restarts into update mode (unplug nothing)… s: ", noreq: "The update mode has not asked for anything yet… s: ", backwait: "Restarting… s: ",
     reboot: "Restarting", done: "Done: the keyboard runs ", stopped: "Stopped. Replug the USB cable and press Install again.",
     error: "Error: ", needRisk: "Tick the box above first.",
     denied: "MIDI (SysEx) access was not allowed. Allow MIDI in the site settings (address bar) and try again.",
@@ -186,6 +192,10 @@ const TEXT = {
     noreturn: "The keyboard did not come back. Switch it off and on.",
     mismatch: "Written, but the keyboard reports another version: ",
     foreign: "The keyboard is in the update mode of another firmware. Finish that update with its own updater (M-UPGRADE), then try again: ",
+    oldstock: "This keyboard runs an M-VAVE firmware older than V016: update it to V016 with M-UPGRADE first. Nothing was sent: ",
+    timeout: "The keyboard's check of the package did not finish in time: nothing was written. Switch it off and on, then try again.",
+    norequest: "The update mode appeared but asked for nothing: nothing was written. Replug the cable and try again.",
+    toomany: "The keyboard kept asking: stopped. Replug the cable and try again.",
     badreq: "The keyboard asked for data outside the package: stopped. Reload the page and try again: ",
     fm1confirm: "This package is for the FM-1: nothing was written.",
     fm1pkg: "This package is for the FM-1: nothing was written.", board: "This package is not for this board: nothing was written.",
@@ -214,6 +224,7 @@ const TEXT = {
     other2: "ChanceTheMaker の「Sloop SMK」（SMK-37_9xx）が入っている場合：その専用パッケージしか受け付けません。先に M-VAVE のファームウェアに戻してから SLOOP Pro を入れてください。",
     nomidi: "このブラウザでは使えません。Chrome か Edge で開いてください。", loadfail: "読み込めませんでした: ",
     ready: "準備完了：SLOOP Pro ", start: "開始します", verify: "確認中", loader: "書き込みモードに切り替え中", write: "書き込み中",
+    waitota: "書き込みモードで再起動中（抜かないで）… 秒: ", noreq: "書き込みモードからの要求待ち… 秒: ", backwait: "再起動中… 秒: ",
     reboot: "再起動中", done: "完了：", stopped: "途中で止まりました。USB を挿し直してもう一度押してください。",
     error: "エラー: ", needRisk: "先に上のチェックを入れてください。",
     denied: "MIDI（SysEx）の使用が許可されませんでした。サイト設定で MIDI を許可して、もう一度押してください。",
@@ -227,6 +238,10 @@ const TEXT = {
     noreturn: "キーボードが戻ってきません。電源を入れ直してください。",
     mismatch: "書き込みは終わりましたが、別のバージョンを報告しています: ",
     foreign: "キーボードは別のファームウェアの書き込みモードです。そのアップデーター（M-UPGRADE）で終えてから、もう一度: ",
+    oldstock: "このキーボードの M-VAVE ファームウェアは V016 より古いです。先に M-UPGRADE で V016 に更新してください。何も送っていません: ",
+    timeout: "キーボードのパッケージ確認が時間内に終わりませんでした。何も書き込んでいません。電源を入れ直してもう一度。",
+    norequest: "書き込みモードになりましたが要求がありません。何も書き込んでいません。挿し直してもう一度。",
+    toomany: "キーボードが要求を繰り返しました。止めました。挿し直してもう一度。",
     badreq: "キーボードがパッケージ外のデータを要求しました。止めました。再読み込みしてもう一度: ",
     fm1confirm: "これは FM-1 用のパッケージです。何も書き込んでいません。",
     fm1pkg: "これは FM-1 用のパッケージです。何も書き込んでいません。", board: "このボード用のパッケージではありません。何も書き込んでいません。",
@@ -314,7 +329,10 @@ const step = (k, a) => {
   if (k === "verify") { sayK("verify"); $("bar").value = Math.min(100, (a / total) * 100); }
   if (k === "loader") sayK("loader");
   if (k === "write") { sayK("write"); $("bar").value = Math.min(100, ((74 + a) / total) * 100); }
+  if (k === "wait") sayK("waitota", a);
+  if (k === "noreq") sayK("noreq", a);
   if (k === "reboot") sayK("reboot");
+  if (k === "back") sayK("backwait", a);
   if (k === "done") { $("bar").value = 100; sayK("done", a || "", "good"); }
 };
 const failed = (e) => {
@@ -351,8 +369,9 @@ $("go").addEventListener("click", async () => {
   catch (e) { sayK("denied", "", "bad"); lockAll(false); return; }
   try {
     const up = new Updater(midi, log);
-    const ota = await up.find((id) => /^ota-/i.test(id.model), true);   /* left in update mode: the write resumes */
-    const dev = ota || await up.find((id) => !/^ota-/i.test(id.model));
+    /* the keyboard on its named port, running or left in update mode; a loader under a generic name: looked for too */
+    const dev = (await up.find(null)) || (await up.find((id) => /^ota-/i.test(id.model), true));
+    const ota = dev && /^ota-/i.test(dev.id.model) ? dev : null;   /* left in update mode: the write resumes */
     if (!dev) throw pfail("notfound", up.seen());
     dev.link.close();
     const c = choose(dev.id.text);
@@ -360,15 +379,8 @@ $("go").addEventListener("click", async () => {
     total = 74 + Math.ceil(image.length / 512);
     $("device").textContent = t("device") + dev.id.text + t("pkgFor") + c.product;
     if (ota) {                                     /* the write finished, then the keyboard is checked as install() does */
-      if (!(await up.resume(image, step, { package: c.product, anyModel: c.anyModel }))) throw pfail("stopped");
-      step("reboot");
-      await new Promise((r) => setTimeout(r, 3000));
-      const back = await up.waitFor((id) => !/^ota-/i.test(id.model), 60000);
-      if (!back) throw pfail("noreturn");
-      back.link.close();
-      if (back.id.text !== c.product) throw pfail("mismatch", back.id.text);
-      step("done", back.id.text);
-    } else await up.install(image, c.product, step, c.anyModel);
+      if (!(await up.resume(image, step, { package: c.product, anyModel: c.anyModel, verify: true }))) throw pfail("stopped");
+    } else await up.install(image, c.product, step, c.anyModel, { refuseOldStock: true });
   } catch (e) { failed(e); }
   lockAll(false);
 });
