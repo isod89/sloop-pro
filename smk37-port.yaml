@@ -1,0 +1,109 @@
+# SLOOP Pro: SLOOP 2.8.1 on the SMK-37, by SLOOP's author (an own product in its own repository, isod89/sloop-pro).
+# The mapping is the reference port's (genkigenki/sloop-fm1 smk37), approved by the owner; additions marked SLOOP Pro.
+# Controls: SLOOP-PRO.md.
+
+firmware:
+  name: SLOOP Pro
+  upstream: https://github.com/isod89/sloop-fm1
+  base: SLOOP 2.8.1 (d893642), with the layer merged from genkigenki/sloop-fm1 smk37 (on SLOOP 2.7)
+  family: sloop
+  board_layer: sloop
+  lost_on_smk: [TRS MIDI IN]
+  priorities:
+    - the SLOOP workflow unchanged, so the SLOOP manual still applies
+    - step sequencing on the pads, in the screen's track colours
+    - quick sound choice without menus
+    - a hands-on mixer for the four tracks
+
+delivery:
+  mode: own                 # the owner's own product, SLOOP Pro, in its own repository
+  pr: ""
+  fork: isod89/sloop-pro
+  package: sloop-pro.fwsc       # sloop-pro-elite.fwsc, sloop-pro-mke.fwsc
+  usb_name: Felucca         # SLOOP's USB product string; installers already know it
+  data_family: SLOOP        # shared with SLOOP's earlier SMK-37 builds (the owner's choice): data survives the switch
+  copyright: isod89         # the new SLOOP Pro files
+
+models: [pro, elite, mke]
+
+keys:
+  middle: fm1
+  outer: extend             # synth tracks: more notes; drum track: drums
+  outer_drums:
+    C3: kick
+    D3: snare
+    E3: hi-hat              # a black key plays its left white neighbour
+    G#5: cowbell
+    A5: open hi-hat
+    B5: crash
+    C6: ride
+  velocity: factory
+
+pads:
+  pattern: steps            # the FM-1's 16 white keys F3..G5
+  order: reading            # top row steps 1-8, bottom row 9-16
+  colours: screen           # track colours: blue, green, yellow, orange
+  idle: dark
+  playhead: bright          # playhead and hits bright
+  picker:
+    enabled: true           # turn K4: one kind of sound on the pads and the screen
+    knob: K4
+    page: "< >"
+    pin: KNOB BANK
+  velocity: true
+  notes: SEL layer shows a piano layout (scale green, root brighter); SAVE layer shows slots (used green, free white)
+
+faders:
+  pattern: banks
+  takeover: soft
+  bank_button: FADER BANK   # opens the FADER BANK screen; K2 turns A-B-C-D; its LED is lit off bank A
+  banks:
+    A: [level 1, level 2, level 3, level 4 (drums)]
+    B: [filter 1, filter 2, filter 3, filter 4]       # low-pass left, open in the centre, high-pass right
+    C: [reverb 1, reverb 2, reverb 3, reverb 4]
+    D: [delay 1, delay 2, delay 3, delay 4]
+    E: [attack, decay, sustain, release]            # SLOOP Pro: of the selected synth track
+  screen: bank_screen
+
+wheels:
+  pitch:
+    target: bend
+    range_semitones: 7
+    applies_to: selected
+  mod:
+    target: vibrato
+    detail: 10 Hz, up to +-1 semitone, up = more
+  calibration: auto
+
+knobs:
+  layout: fm1
+  K1: master                # virtual pot, 24 of 1024 steps per detent
+  K2: select                # tempo on TRACKS, pages
+  K3: track
+  K4: sound / kit           # opens the pad sound picker
+  K5: dial 1 (blue)
+  K6: dial 2 (green)
+  K7: dial 3 (yellow)
+  K8: dial 4 (orange)
+  step: detent
+  pages: {}
+
+buttons:
+  map: printed              # PATCH = HOME, CHORD = ENV, NOTE REPEAT = LFO, SCALE = SEL, PARA = EDIT, GLOBE = GLO, BT = SAVE
+  extra:
+    KNOB BANK: pins the pad sound picker
+    FADER BANK: the fader bank screen
+    "<": "page back (SEQ held: step page back; visualiser: style)"
+    ">": "page forward (SEQ held: step page forward; visualiser: style)"
+
+screen:
+  style: keep               # SLOOP's screens, plus the FADER BANK screen and the picker
+  colours: track colours blue, green, yellow, orange on screen, pads and knob caps K5-K8
+  rules:
+    - the screen shows what you touch first
+    - same colours and same places on screen and panel
+    - no hidden modes
+
+pedal: sustain             # SLOOP Pro: the selected synth track, CC 64 out; polarity learnt at power-on
+
+open_questions: []

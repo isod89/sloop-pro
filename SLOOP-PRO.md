@@ -1,40 +1,70 @@
-# SLOOP on the M-Vave SMK-37
+# SLOOP Pro: SLOOP on the M-Vave SMK-37
 
-The M-Vave SMK-37 has the FM-1's chip (JieLi AC791N), so SLOOP runs on it as a target board: `BOARD=smk37`.
-Everything SMK-37-specific sits behind `BOARD_SMK37`; the FM-1 build is unchanged, byte for byte.
+The M-Vave SMK-37 has the FM-1's chip (JieLi AC791N), so SLOOP runs on it as a target board: `BOARD=smk37`. That
+build is **SLOOP Pro**: SLOOP 2.8.1 with the SMK-37's 37 velocity keys, 16 RGB pads, 4 faders, 8 knobs, wheels,
+pedal and TRS MIDI out. Everything SMK-37-specific sits behind `BOARD_SMK37`; the FM-1 build is SLOOP, unchanged,
+byte for byte.
 
 > Unofficial firmware for the SMK-37, not affiliated with or endorsed by M-Vave. No warranty: install at your own
 > risk and read [Safety](#safety) first.
+
+The SMK-37 board layer is genkigenki's ([fm1-to-smk37](https://github.com/genkigenki/fm1-to-smk37), the reference
+port on SLOOP 2.6 / 2.7); a few SLOOP Pro additions follow ChanceTheMaker's
+[sloop-smk](https://github.com/ChanceTheMaker/sloop-smk) (the pedal, pad brightness, the envelope fader bank, no
+hanging TRS notes, a save that never claims to be one when the flash failed).
+
+## What SLOOP Pro adds to the SMK-37 layer
+
+| | |
+|---|---|
+| SLOOP 2.8.1 | the NOTES piano roll and the per-step sheets (OCT+ held), FILTER RESO, STEP ADVANCE, DRUM PREVIEW, the punch-in fade (FX held + SELECT), MIDI Bank Select |
+| Sustain pedal | the PEDAL jack: a footswitch of either polarity (the reading at power-on is "up": plug it in before switching on); the selected synth track sustains, CC 64 goes out over USB and TRS |
+| PAD LIGHTS | HOME menu > LIGHTS > PAD LIGHTS (K8): HIGH (default), MID, LOW; each change lights the 16 pads in the tracks' colours for 1.5 s (a test of every pad) |
+| FADER BANK E | ENV: faders 1–4 set the selected synth track's ATTACK, DECAY, SUSTAIN, RELEASE |
+| TRS MIDI OUT | turned OFF (or a note-off lost to a full buffer): a note-off for every note still on, then sustain off and all notes off — nothing hangs on the other synth |
+| Saving | a section the flash did not take shows NOT SAVED: FLASH ERROR and keeps what was saved before; the editor says so too |
+| Installer | one page for the three models: it reads the keyboard's model and writes its package; a keyboard left in update mode is finished and checked; an FM-1 and ChanceTheMaker's firmwares are refused before anything is sent |
 
 ## Models
 
 | Model | Build | Package identity |
 |---|---|---|
-| SMK-37 Pro | `BOARD=smk37 ./build.sh` | `SMK-37 Pro_900` (`build/sloop-smk37.fwsc`) |
-| SMK-37 Elite | `BOARD=smk37 MODEL=elite ./build.sh` | `SMK-37 Elite_900` (`build/sloop-smk37-elite.fwsc`) |
-| MKE-P37 | `BOARD=smk37 MODEL=mke ./build.sh` | `MKE-P37_900` (`build/sloop-smk37-mke.fwsc`) |
+| SMK-37 Pro | `BOARD=smk37 ./build.sh` | `SMK-37 Pro_900` (`build/sloop-pro.fwsc`) |
+| SMK-37 Elite | `BOARD=smk37 MODEL=elite ./build.sh` | `SMK-37 Elite_900` (`build/sloop-pro-elite.fwsc`) |
+| MKE-P37 | `BOARD=smk37 MODEL=mke ./build.sh` | `MKE-P37_900` (`build/sloop-pro-mke.fwsc`) |
 | Starrykey 37 Play | the SMK-37 Pro build | `SMK-37 Pro_900` |
 
 They are one keyboard under several names. The `MODEL` builds differ only in the name the keyboard reports
 (its identity, its update loader's, the update record's), so M-Vave's updater still recognises the unit for the way
-back to the stock firmware. A release build: `--release X.Y` (identity `SMK-37 Pro_9XY`). See
-[BUILDING.md](BUILDING.md) for the toolchain.
+back to the stock firmware. A release build: `--release X.Y` (identity `SMK-37 Pro_9XY`). All three at once:
+`tools/build_pro.sh` (Linux / WSL) or `INSTALL-SLOOP-PRO.bat` (Windows). See [BUILDING.md](BUILDING.md) for the
+toolchain.
 
 ## Install
 
-Connect the keyboard over USB (a data cable) and use this repository's installer, as for the FM-1:
+Connect the keyboard straight to the computer over USB (a data cable), close other apps that use MIDI, then:
 
-```sh
-python3 tools/fm1_install.py build/sloop-smk37.fwsc        # Python 3 with mido and python-rtmidi
-```
+- **Windows:** `INSTALL-SLOOP-PRO.bat` builds the three packages in WSL and opens the installer page
+  (<http://localhost:8767/webapp/installer/>, Chrome or Edge). `OPEN-EDITOR-PRO.bat` opens the editor later.
+- **The installer page** (`web/index_pro.html`, built by `web/make_site.py --pro`): it reads the keyboard's model
+  and writes that model's package (or the one you tick), checks each package's SHA-256 first, and checks the
+  identity after the restart.
+- **The command line:**
 
-It finds the keyboard's MIDI port, checks the model and the package, asks the running firmware (the stock one or
-SLOOP) to start the update loader and writes the package; then the keyboard restarts and the installed identity is
-checked. The web installer (`web/index_pkg.html`, built by `web/make_site.py`) does the same in Chrome or Edge.
-Updating later works the same way; projects, presets, samples and settings are kept. A package never goes to the
-other device (FM-1 / SMK-37), and a keyboard running another firmware with its own updater is left alone.
+  ```sh
+  python3 tools/fm1_install.py build/release/          # the three packages: the one for this keyboard
+  python3 tools/fm1_install.py build/sloop-pro-elite.fwsc   # or one package (Python 3, mido, python-rtmidi)
+  ```
 
-Until this project's releases include SMK-37 packages, unofficial builds can be installed with the web installer: <https://genkigenki.github.io/smk37/>.
+Either way: the running firmware (the stock one or SLOOP Pro) starts the update loader and the package is written;
+then the keyboard restarts and the installed identity is checked. A write cut off (cable, power) resumes when you
+install again: the keyboard stays in update mode until it is finished. Updating later works the same way; projects,
+presets, samples and settings are kept. A package never goes to the other device (FM-1 / SMK-37).
+
+**From ChanceTheMaker's Sloop SMK** (or Felucca SMK, Melodee SMK, Doom: the keyboard reports `SMK-37_9xx`): those
+firmwares take only their own packages, so go back to the M-Vave firmware first (their restore page, or M-UPGRADE),
+then install SLOOP Pro. Back up your projects there first: their data is not SLOOP Pro's, and SLOOP Pro clears
+another firmware's store at its first start.
 
 **Back to the stock firmware:** install the official package for your model with M-Vave's own updater (M-UPGRADE),
 or give it to the installer: `python3 tools/fm1_install.py --force SMK-37_Pro_016.fwsc` (the installer reads the
@@ -46,7 +76,7 @@ marker sits over sample data, so the stock firmware rebuilds its factory mapping
 your MIDI Suite presets) stays as it is. The web editor's Settings tab has **Prepare the return to M-Vave** to erase
 the marker on request.
 
-**If it does not start:** after two failed starts SLOOP opens its USB recovery screen (identity `SMK-37 Pro_000`,
+**If it does not start:** after two failed starts SLOOP Pro opens its USB recovery screen (SLOOP PRO USB RESCUE) (identity `SMK-37 Pro_000`,
 or the model's), where the installer can write a package again; after a third it drops into the chip's mask-ROM
 update mode (UBOOT).
 
@@ -63,10 +93,10 @@ update mode (UBOOT).
 | KNOB 3 | dial 3 on screen (yellow) | K7 | dial 3 |
 | KNOB 4 | dial 4 on screen (orange) | K8 | dial 4 |
 | — | — | KNOB LAYOUT = SMK | HOME menu > SCREEN > KNOB LAYOUT (K7): K1–K4 the dials 1–4, K5 master volume, K6 SELECT, K7 PRESETS, K8 ALGORITHM (track); FM-1 (default) as above |
-| — | — | FADER 1–4 | tracks 1–4 (4 = drums), by FADER BANK: A level, B filter (low-pass ◀ open ▶ high-pass), C reverb, D delay; a fader takes over once moved |
+| — | — | FADER 1–4 | tracks 1–4 (4 = drums), by FADER BANK: A level, B filter (low-pass ◀ open ▶ high-pass), C reverb, D delay; E ENV: the selected synth track's ATTACK, DECAY, SUSTAIN, RELEASE; a fader takes over once moved |
 | — (no wheels used by SLOOP) | — | PITCH wheel | pitch bend, selected synth track: HOME menu > PLAY > BEND UP (K6) / BEND DOWN (K7), OFF, 1, 2, 3, 4, 5, 7, 12 semitones each; default 7 / 7 |
 | — | — | MOD wheel | vibrato 10 Hz, up to ±1 semitone (up = more) |
-| — | — | PEDAL jack | — |
+| — | — | PEDAL jack | sustain (a footswitch, either polarity: plugged in before power-on), the selected synth track; CC 64 out over USB and TRS (DAW mode: on CHANNEL) |
 
 ## Buttons
 
@@ -87,7 +117,7 @@ update mode (UBOOT).
 | OCT− | octave down | drums: ghost hits | OCTAVE− | OCT− |
 | OCT+ | octave up | drums: hard hits | OCTAVE+ | OCT+ |
 | — | — | — | KNOB BANK | pins the pad sound picker open / closes it (lit while pinned or while K4 turns) |
-| — | — | — | FADER BANK | the fader bank screen; pressed again, < > or SELECT: the next bank A→B→C→D (closes after 4 s; lit while up; closes the pad picker) |
+| — | — | — | FADER BANK | the fader bank screen; pressed again, < > or SELECT: the next bank A→B→C→D→E (closes after 4 s; lit while up; closes the pad picker) |
 | — | — | — | KNOB BANK + FADER BANK | the pads on the PLAY screen: DRUM KIT (default) ↔ STEPS (as the stock PAD BANK combo) |
 | — | — | — | < | page back (as SELECT, never tempo); SEQ held or pads on STEPS: step page back; visualiser: style |
 | — | — | — | > | page forward; SEQ held or pads on STEPS: step page forward; visualiser: style |
@@ -118,13 +148,21 @@ notes, their MIDI out and the drum levels; OCT− / OCT+ held still play ghost /
 
 ## HOME menu: the SMK-37 settings
 
-HOME menu (PATCH held; sections SCREEN, LIGHTS, AUDIO, PLAY, MIDI, DAW, SYSTEM); SELECT walks the sections, the knobs set the rows (K5–K8, or K1–K4 with KNOB LAYOUT = SMK;
-the screen names them), OCT+ steps the row under the cursor; SEQ PLAY and SEQ REC still start / stop and arm:
+HOME menu (PATCH held; sections SCREEN, LIGHTS, AUDIO, USB, SEQ, PLAY, MIDI, DAW, SYSTEM: four rows at most, one a
+knob); SELECT walks the sections, the knobs set the rows (K5–K8, or K1–K4 with KNOB LAYOUT = SMK; the screen names
+them), OCT+ steps the row under the cursor; SEQ PLAY and SEQ REC still start / stop and arm:
 
 | Section | Row | Knob | Setting |
 |---|---|---|---|
+| SCREEN | COLOR, ZOOM | K5, K6 | as SLOOP's |
 | SCREEN | KNOB LAYOUT | K7 | FM-1 (default): K1 MASTER, K2 SELECT, K3 ALGORITHM, K4 PRESETS, K5–K8 the dials. SMK: K1–K4 the dials, K5 MASTER, K6 SELECT, K7 PRESETS, K8 ALGORITHM. The knobs are endless: the new layout works at once. Switched to SMK, the menu's rows move to K1–K4 (K3 switches back) |
-| AUDIO | LIMITER | K8 | SOFT (default): 9 dB more headroom at the power-on MASTER position, the limiter only near full scale, so a held chord keeps its level; MASTER's top as loud as before (turn it up for loudness). CLASSIC: SLOOP's limiter and MASTER curve |
+| LIGHTS | LIGHTS, KEYS, NOTES | K5–K7 | as SLOOP's (the button lights) |
+| LIGHTS | PAD LIGHTS | K8 | the pads' brightness: HIGH (default), MID, LOW; each change shows on the 16 pads for 1.5 s |
+| AUDIO | SPEAKER LOWCUT | K5 | as SLOOP's |
+| AUDIO | LIMITER | K6 | SOFT (default): 9 dB more headroom at the power-on MASTER position, the limiter only near full scale, so a held chord keeps its level; MASTER's top as loud as before (turn it up for loudness). CLASSIC: SLOOP's limiter and MASTER curve |
+| AUDIO | FILTER RESO | K7 | the track filter's resonance, OFF .. 10 (SLOOP 2.8) |
+| USB | USB AUDIO, USB SERIAL, USB RATE | K5–K7 | as SLOOP's (USB SERIAL only in a build with the serial console) |
+| SEQ | STEP ADVANCE, DRUM PREVIEW | K5, K6 | as SLOOP's (2.7.1) |
 | PLAY | KEY VELOCITY | K5 | see [Velocity](#velocity) |
 | PLAY | BEND UP | K6 | the pitch wheel up, on the internal sounds (the selected synth track): OFF, 1, 2, 3, 4, 5, 7 or 12 semitones, default 7. MIDI IN's pitch bend has its own (GLO > MIDI 2 > BEND) |
 | PLAY | BEND DOWN | K7 | the same, down (default 7; e.g. +2 up, −12 down). The earlier BEND RANGE is read as both |
