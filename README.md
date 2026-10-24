@@ -7,6 +7,7 @@ Leo Kuroshita / Hügelton Instruments; the SMK-37 board layer by <a href="https:
 <p align="center">
 <a href="SLOOP-PRO.md"><b>SLOOP Pro: controls, menu, install</b></a> ·
 <a href="DEMARRAGE-RAPIDE-PRO-FR.md">Démarrage rapide (français)</a> ·
+<a href="TEST-SLOOP-PRO.md">Essais sur le SMK-37</a> ·
 <a href="GUIDE.md">The SLOOP guide</a> ·
 <a href="BUILDING.md">Building</a> ·
 <a href="../../releases">Releases</a> ·
