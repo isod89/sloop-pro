@@ -3,6 +3,8 @@
 #   build-sloop-pro.ps1 -NoServe   build only (the packages and their SHA-256 in build\release\)
 #   build-sloop-pro.ps1 -SiteOnly  no compile: the installer site again from the packages already in build\release\
 #                                  (OUVRIR-INSTALLATEUR-PRO.bat)
+#   build-sloop-pro.ps1 -SiteOnly -Publish  the site into docs\ (GitHub Pages: https://isod89.github.io/sloop-pro/),
+#                                  nothing served (PUBLIER-GITHUB-PRO.bat)
 #   build-sloop-pro.ps1 -Diag      a diagnostic build: the USB serial console in (HOME menu > USB > USB SERIAL ON, then
 #                                  a terminal on the keyboard's COM port: status, smk, padtest, leds)
 # Settings (environment, all optional):
@@ -13,7 +15,7 @@
 # From a SLOOP folder next to this one it also takes the sample cache (build\genwav, gen_samples.cache: a faster first
 # build) and the editor's audio preview (build\preview), when they are not here yet.
 # SLICE stays out (FELUCCA_SLICE=0), as in SLOOP's build.
-param([switch]$NoServe, [switch]$Diag, [switch]$SiteOnly)
+param([switch]$NoServe, [switch]$Diag, [switch]$SiteOnly, [switch]$Publish)
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 $distro = if ($env:SLOOP_WSL_DISTRO) { $env:SLOOP_WSL_DISTRO } else { 'MinUI-Build' }
@@ -71,6 +73,14 @@ Get-FileHash -Algorithm SHA256 $pk | ForEach-Object { "$($_.Hash.ToLower())  $(S
 Write-Host "== Making the installer site" -ForegroundColor Cyan
 python web/make_site.py --pro $ver build/sloop-pro-site @pk
 if ($LASTEXITCODE -ne 0) { throw "make_site failed" }
+if ($Publish) {                                    # docs\ = the site GitHub Pages serves (main, /docs)
+  if (Test-Path docs) { Get-ChildItem docs -Force | Remove-Item -Recurse -Force }
+  New-Item -ItemType Directory -Force docs | Out-Null
+  Copy-Item -Recurse -Force build\sloop-pro-site\* docs\
+  New-Item -ItemType File -Force docs\.nojekyll | Out-Null
+  Write-Host "== docs\ is the SLOOP Pro site (installer, editor, the three packages)" -ForegroundColor Cyan
+  exit 0
+}
 if ($NoServe) { exit 0 }
 Write-Host ""
 Write-Host "Installer: http://localhost:8767/webapp/installer/  (Chrome or Edge, the SMK-37 on USB)" -ForegroundColor Green

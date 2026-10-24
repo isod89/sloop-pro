@@ -2,7 +2,8 @@
 
 <p align="center"><b>SLOOP Pro — the SLOOP groovebox on the M-VAVE SMK-37.</b><br>
 Free and open source (GPL-3.0). SLOOP by isod89, based on <a href="https://github.com/hugelton/Felucca">Felucca</a> by
-Leo Kuroshita / Hügelton Instruments; the SMK-37 board layer by <a href="https://github.com/genkigenki/fm1-to-smk37">genkigenki</a>.</p>
+Leo Kuroshita / Hügelton Instruments; the SMK-37 board layer by <a href="https://github.com/genkigenki/fm1-to-smk37">genkigenki</a>.
+Everyone who made it possible: <a href="CREDITS.md">CREDITS.md</a>.</p>
 
 <p align="center">
 <a href="SLOOP-PRO.md"><b>SLOOP Pro: controls, menu, install</b></a> ·
@@ -38,8 +39,10 @@ M-VAVE SMK-37 — with what the bigger keyboard brings:
 ## Install
 
 1. Back up the keyboard's flash once (see [Safety](SLOOP-PRO.md#safety)).
-2. **Windows:** run `INSTALL-SLOOP-PRO.bat` (it builds the three packages in WSL and opens the installer in your
-   browser), or open the SLOOP Pro installer page of a release. Chrome or Edge.
+2. Open the installer: **[isod89.github.io/sloop-pro](https://isod89.github.io/sloop-pro/)** in Chrome or Edge,
+   nothing to build. (Or build it yourself on Windows: `INSTALL-SLOOP-PRO.bat` builds the three packages in WSL and
+   opens the same installer from your computer.) The keyboard must run M-VAVE's V016 first: update an older one
+   with M-VAVE's own updater.
 3. Connect the SMK-37 straight to the computer (a USB data cable), close other MIDI apps, tick the box, press
    **Install SLOOP Pro**. The page reads the model and writes its package, then checks the keyboard after the restart.
 
@@ -60,13 +63,22 @@ as [README-SLOOP.md](README-SLOOP.md).
 
 ## Credits
 
+SLOOP Pro stands on the open work of many people; [CREDITS.md](CREDITS.md) names each of them and what they did.
+
+- **Felucca**: Leo Kuroshita ([@kurogedelic](https://github.com/kurogedelic)), Hügelton Instruments, the open FM-1
+  firmware SLOOP is built on.
 - **SLOOP**: isod89 and contributors ([README-SLOOP.md](README-SLOOP.md#credits-and-thanks)).
-- **Felucca**: Leo Kuroshita (@kurogedelic), Hügelton Instruments — the open FM-1 firmware SLOOP is built on.
-- **The SMK-37 board layer**: M. Geisler (genkigenki), [fm1-to-smk37](https://github.com/genkigenki/fm1-to-smk37) and
-  the reference SLOOP port.
-- **Ideas from** ChanceTheMaker's [sloop-smk](https://github.com/ChanceTheMaker/sloop-smk): the pedal's measured
-  levels, pad brightness, the envelope fader bank, the TRS note-off flush, honest save results.
-- FM-1 reverse engineering: [FM-1-RE](https://github.com/AL-255/FM-1-RE) (AL-255); JieLi tools by kagaimiq.
+- **The SMK-37 port**: M. Geisler ([@genkigenki](https://github.com/genkigenki)):
+  [fm1-to-smk37](https://github.com/genkigenki/fm1-to-smk37), the board layer, the SMK-37 features, the reference
+  SLOOP port and the update library of the web installer.
+- **[@ChanceTheMaker](https://github.com/ChanceTheMaker)**, [sloop-smk](https://github.com/ChanceTheMaker/sloop-smk):
+  the ideas behind the pedal, the pad brightness, the envelope fader bank, the TRS note-off flush and honest save
+  results.
+- **The second core**: [@andrerezemini](https://github.com/andrerezemini) (sloop-lab),
+  [Charles Vestal](https://github.com/charlesvestal) (X0X), [@keremimo](https://github.com/keremimo) (Melodee).
+- **And**: [@renebohne](https://github.com/renebohne), [@juanjiant-bit](https://github.com/juanjiant-bit) (JIANT FM),
+  [@ordenador](https://github.com/ordenador), [AL-255](https://github.com/AL-255/FM-1-RE) (FM-1-RE),
+  [kagaimiq](https://github.com/kagaimiq) (JieLi tools), and the Felucca and SLOOP communities.
 
 M-VAVE, SMK-37, MKE-P37, Starrykey and FM-1 are trademarks of their respective owners; SLOOP Pro is not affiliated
 with them. Licence: GPL-3.0 ([LICENSE](LICENSE), [LICENSING.md](LICENSING.md)).

@@ -1,13 +1,13 @@
 {
- "name": "SLOOP",
- "short_name": "SLOOP",
+ "name": "SLOOP Pro",
+ "short_name": "SLOOP Pro",
  "id": "editor/",
  "start_url": "editor/",
  "scope": "./",
  "display": "standalone",
  "background_color": "#000000",
  "theme_color": "#000000",
- "description": "SLOOP for the M-VAVE FM-1: the editor and the installer, also without internet",
+ "description": "SLOOP Pro for the M-VAVE SMK-37: the editor and the installer, also without internet",
  "icons": [
   {
    "src": "icon-192.png",

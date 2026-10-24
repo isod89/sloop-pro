@@ -5,6 +5,8 @@
 // checked in install() and resume() (boardRefusal), resume(..., { verify }), pickPackage for the three models.
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
+// SMK-37 installer (Windows-safe WebMIDI): Copyright (C) 2026 M. Geisler (genkigenki/makkuro)
+// SLOOP Pro additions: Copyright (C) 2026 isod89
 //
 // The FM-1 USB-MIDI update protocol (M-UPGRADE compatible) over WebMIDI.
 // Step 1: the running firmware reads parts of the package and stages the update
