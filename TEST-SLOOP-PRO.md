@@ -43,7 +43,13 @@ Double-clic sur **`INSTALL-SLOOP-PRO.bat`**. Trois compilations (Pro, Elite, MKE
 4. **Ne rien débrancher pendant l'écriture.** Arrêt en route : rebrancher, Installer à nouveau (ça reprend).
    Le clavier ne démarre pas : **OCTAVE−** maintenu à l'allumage (SLOOP PRO USB RESCUE), puis réinstaller.
 
-Ligne de commande (au lieu de la page) : `python tools\fm1_install.py build\release\` (`pip install mido python-rtmidi`).
+**Sous Windows, si la page reste bloquée à « Passage en mode mise à jour »** (Chrome garde le port MIDI du clavier
+pendant son redémarrage) : fermer **complètement** Chrome / Edge, débrancher / rebrancher le clavier, puis double-clic sur
+**`INSTALLER-USB-PRO.bat`** : il parle au clavier sans navigateur, trouve le bon paquet, reprend ou fait l'installation
+et vérifie le clavier à la fin. (Le clavier n'a rien perdu : tant que l'écriture n'a pas commencé, il revient à son
+firmware d'origine en le rallumant.)
+
+Ligne de commande (la même chose) : `python tools\fm1_install.py build\release\` (`pip install mido python-rtmidi`).
 
 ## 4. Sauvegarde complète de la flash (une fois, tout de suite après)
 
