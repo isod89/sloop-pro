@@ -12,12 +12,10 @@
 enum { SMK_BTN_KNOB_BANK = 0, SMK_BTN_FADER_BANK = 1, SMK_BTN_LEFT = 2, SMK_BTN_RIGHT = 3 };   /* (smk_input.h) */
 #define SMK_ENC_MASTER 0u
 #define SMK_NLED 19u
-#define SMK_NPAD 16u
 static uint8_t smk_pad_daw, smk_pad_piano, smk_master_hold, smk_master_enc;
 static uint16_t smk_pad_pick;
-static uint32_t padled_hold_until, bled_hold_until;
-static uint8_t bled_id, pads[16][3], leds[SMK_NLED];
-static void padled_set(uint32_t p, uint8_t r, uint8_t g, uint8_t b) { pads[p & 15u][0] = r, pads[p & 15u][1] = g, pads[p & 15u][2] = b; }
+static uint32_t bled_hold_until;                   /* (the pads: daw_ui_host.h) */
+static uint8_t bled_id, leds[SMK_NLED];
 static uint32_t closes;
 static void pick_close(void) { closes++; }
 static void fb_close(void) {}
@@ -222,7 +220,8 @@ int main(int argc, char **argv)
     shot("daw-menu-midi");
     check(MS_FIRST[MS_PLAY] == MI_VEL && MS_FIRST[MS_MIDI] == MI_TRS && MS_FIRST[MS_DAW] == MI_DMAP && MI_LOCAL - MI_TRS == 3 &&
           MI_DRESET - MI_DMAP == 3 && MI_BDN - MI_VEL == 2 && MI_ACCEL == MI_BDN + 1 && MS_FIRST[MS_MIDI] - MS_FIRST[MS_PLAY] == 4 &&
-          MI_KLAY == MI_ZOOM + 1 && MI_LIMIT - MS_FIRST[MS_AUDIO] == 3,
+          MI_KLAY == MI_ZOOM + 1 && MI_LIMIT - MS_FIRST[MS_AUDIO] == 1 && MI_FRESO == MI_LIMIT + 1 &&
+          MS_FIRST[MS_USB] == MI_USB && MS_FIRST[MS_SEQ] == MI_ADV && MI_PADL == MI_NOTES + 1,
           "PLAY: KEY VELOCITY, BEND UP, BEND DOWN, KNOB ACCEL (2.7); MIDI: TRS, MODE, CHANNEL, LOCAL; DAW: 4; KNOB LAYOUT, LIMITER on their knobs");
     for (i = 0; i < MS_COUNT; i++)
         if (MS_FIRST[i + 1] - MS_FIRST[i] > 4u || MS_FIRST[i + 1] <= MS_FIRST[i])
@@ -251,6 +250,28 @@ int main(int argc, char **argv)
     ui.menu_sel = MS_FIRST[MS_MIDI]; shot("daw-menu-midi-smk");
     check(knob_digit(EN_K1) == '1', "KNOB LAYOUT SMK: the rows are K1..K4");
     knob_layout = 0;
+    /* SLOOP Pro: the sections that changed: LIGHTS (PAD LIGHTS), AUDIO (LOWCUT, LIMITER, FILTER RESO), USB, SEQ */
+    ui.menu_sel = MS_FIRST[MS_LIGHTS]; shot("menu-lights");
+    ui.menu_sel = MS_FIRST[MS_AUDIO]; shot("menu-audio");
+    ui.menu_sel = MS_FIRST[MS_USB]; shot("menu-usb");
+    ui.menu_sel = MS_FIRST[MS_SEQ]; shot("menu-seq");
+    {
+        uint16_t c;
+        padled_dim = 0;
+        check(!strcmp(mi_value(MI_PADL, &c), "HIGH"), "PAD LIGHTS: HIGH (as before) by default");
+        mi_set(MI_PADL, -1);
+        check(padled_dim == 1 && !strcmp(mi_value(MI_PADL, &c), "MID") && padled_hold_until == fm1_ms + 1500u &&
+              pads[0][0] == 40 && pads[0][2] == 255 && pads[2][1] == 204 && pads[7][0] == 255 && pads[8][2] == 255,
+              "PAD LIGHTS left: MID, the pads show it in the tracks' colours (two a colour) for 1.5 s");
+        mi_set(MI_PADL, -1); mi_set(MI_PADL, -1);
+        check(padled_dim == 2 && !strcmp(mi_value(MI_PADL, &c), "LOW"), "... LOW, it stops there");
+        mi_set(MI_PADL, 1);
+        check(padled_dim == 1, "right: MID");
+        mi_set(MI_PADL, 0); mi_set(MI_PADL, 0);
+        check(padled_dim == 2, "OCT+ steps round (MID -> HIGH -> LOW)");
+        padled_dim = 0;
+        padled_hold_until = 0;
+    }
     mi_set(MI_MODE, -1);
     check(!daw_on && !smk_master_hold, "MODE left: SYNTH (the menu stays up)");
     mi_set(MI_MODE, 0);

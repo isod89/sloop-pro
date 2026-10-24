@@ -9,6 +9,12 @@
 #include "smk_midi_out.h"
 #include "smk_knobs.h"
 static void knob_layout_apply(void) {}
+/* the pads (lcd.c, SMK-37): what the menu's PAD LIGHTS (SLOOP Pro) and the DAW lights set */
+#define SMK_NPAD 16u
+static uint32_t padled_hold_until;
+static uint8_t padled_dim, pads[16][3];
+static void padled_set(uint32_t p, uint8_t r, uint8_t g, uint8_t b) { pads[p & 15u][0] = r, pads[p & 15u][1] = g, pads[p & 15u][2] = b; }
+static void padled_dim_set(uint32_t d) { padled_dim = (uint8_t)(d > 2u ? 2u : d); }
 #include "smk_daw.h"
 static uint8_t daw_edit, daw_pbank;
 static int8_t daw_oct;
