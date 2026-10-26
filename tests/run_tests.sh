@@ -77,6 +77,8 @@ $CC -O2 -w -Ibuild/gen -Ifirmware/src -Ifirmware/hal -o "$OUT/k4led_test" tests/
 run "SMK-37 Pro: KNOB BANK lit on a PRESETS detent; which modes are a grid" "$OUT/k4led_test" "$OUT"
 $CC -O2 -w -Ifirmware/hal -o "$OUT/padgrid_test" tests/padgrid_test.c
 run "SMK-37 Pro pads: steps and tiles in reading order, notes low at the bottom, DRUM KIT / STEPS" "$OUT/padgrid_test"
+$CC -O2 -w -Ifirmware/hal -o "$OUT/smk_pad_test" tests/smk_pad_test.c -lm
+run "SMK-37 pads: hits at once at their peak, no rebound hits, rolls, steady holds, the same velocity wherever the readings fall" "$OUT/smk_pad_test"
 $CC -w -Ifirmware/src -o "$OUT/smk_vel_test" tests/smk_vel_test.c
 run "SMK-37 menu KEY VELOCITY: each mode -> the note's velocity, the drum level, the settings bits" "$OUT/smk_vel_test"
 # every key / pad velocity the app reads goes through KEY VELOCITY (smk_vel.h vel_apply): the keys and pads (seq.c key_vel),

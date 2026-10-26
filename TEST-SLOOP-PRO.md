@@ -74,6 +74,7 @@ Ligne de commande (la même chose) : `python tools\fm1_install.py build\release\
 | 2 | PATCH maintenu (menu) → K2 jusqu'à SYSTEM → ABOUT → OCT+ ; puis 2ND CORE | « SLOOP PRO », version, date ; 2ND CORE sur **OFF** (le défaut) |
 | 3 | Les 37 touches, doux puis fort | Toutes jouent avec la nuance ; les 5 basses et 5 hautes : notes ; sur la piste 4 (batterie) : drums |
 | 4 | Les 16 pads | Kit de batterie, orange, plus vifs quand ils sonnent ; rangée du haut = pads 1–8 |
+| 4b | Les pads, de près : un coup sec ; des coups doux puis forts ; un roulement rapide sur un pad ; un pad tenu doucement | Un coup = **une** note (pas de double frappe), aussi vite qu'une touche ; la nuance suit la force, la même d'un coup égal à l'autre ; le roulement joue chaque coup ; tenu doucement en NOTES : une seule note qui tient |
 | 5 | KNOB BANK + FADER BANK ensemble, une fois | « PADS: NOTES » : sur une piste synthé (K3), les pads jouent son son (rangée du bas F3–C4, du haut D4–G5), avec la nuance ; couleur de la piste, plus vive quand la note sonne. Une 2e fois : « PADS: STEPS », pads en mode PAS (haut = pas 1–8), un pad pose / efface un pas ; une 3e : retour au kit |
 | 6 | K1–K8, lentement puis très vite | K1 volume, K2 tempo/pages, K3 piste, K4 sons (sur les pads) ; un cran = un pas. **La rotation rapide perd-elle des crans ?** |
 | 7 | Faders, FADER BANK plusieurs fois | A niveau, B filtre, C reverb, D delay, **E enveloppe** (piste synthé : ATTACK DECAY SUSTAIN RELEASE à l'écran et à l'oreille ; batterie : « ENV: SELECT A SYNTH TRACK ») |
