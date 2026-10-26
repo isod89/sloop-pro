@@ -50,9 +50,12 @@ static const char *const MI_NAME[MI_COUNT] = {"COLOR", "ZOOM",
 #else
                                               "KNOB ACCEL",
 #endif
-                                              "LIGHTS", "KEYS", "NOTES",
 #if BOARD_SMK37
+                                              "LIGHTS", "PAD THRESHOLD", "NOTES",   /* (SMK-37: no lit keys; KEYS's setting
+                                                                                     * is the pads' threshold) */
                                               "PAD LIGHTS",
+#else
+                                              "LIGHTS", "KEYS", "NOTES",
 #endif
                                               "SPEAKER LOWCUT",
 #if BOARD_SMK37
@@ -97,6 +100,13 @@ UI_SMALL static int mi_cpu1_have(void)                      /* the second core i
 }
 static const char *const LIGHTS_NAME[LIGHTS_N] = {"OFF", "LOW", "MID", "HIGH"};   /* every button lit, the labels readable */
 static const char *const KEYS_NAME[KEYS_N] = {"OFF", "C KEYS", "WHITE KEYS", "ALL KEYS"};      /* keys lit too, at the LIGHTS level */
+#if BOARD_SMK37
+/* SMK-37: LIGHTS > PAD THRESHOLD (smk_input.h smk_pad_level), kept in the KEYS setting (lights_keys): 0 MID (the
+ * default), 1 LOW, 2 HIGH, 3 MAX; shared with Clipper Pro (the same settings) */
+static const char *const PADT_NAME[4] = {"LOW", "MID", "HIGH", "MAX"};
+static uint32_t padt_lvl(void) { return lights_keys == 0u ? 1u : lights_keys == 1u ? 0u : lights_keys & 3u; }
+static void padt_set(uint32_t l) { lights_keys = (uint8_t)(l == 1u ? 0u : l == 0u ? 1u : l & 3u); }
+#endif
 #define MI_Y0 26                                   /* the first row, under the section tabs */
 #if BOARD_SMK37
 #define MI_ARM_RESET 0xD5u                         /* ui.arm: RESET MAP armed (OCT+ again; ui_daw.c the rest) */
@@ -131,8 +141,12 @@ UI_SMALL static const char *mi_value(uint32_t i, uint16_t *c)
     case MI_ACCEL: return knob_accel_off ? "OFF" : "ON";   /* (2.7) the knobs speed up with a fast turn */
     case MI_LIGHTS: return LIGHTS_NAME[lights_lvl % LIGHTS_N];
     case MI_KEYS:
+#if BOARD_SMK37
+        return PADT_NAME[padt_lvl()];
+#else
         *c = lights_lvl ? C_HI : C_DIM;               /* (needs LIGHTS) */
         return KEYS_NAME[lights_keys % KEYS_N];
+#endif
     case MI_NOTES: return lights_notes ? "ON" : "OFF";
     case MI_LOWCUT: return settings.lowcut ? "ON" : "OFF";
     case MI_USB: return usb_full ? "FULL" : "MASTER";
@@ -532,8 +546,18 @@ UI_SMALL static void mi_set(uint32_t i, int32_t s)
             vel_mode = (uint8_t)((vel_mode + 1u) % VEL_N);
         break;
 #endif
+#if BOARD_SMK37
+    case MI_KEYS: {                                    /* PAD THRESHOLD: right higher, left lower; OCT+ steps round */
+        uint32_t l = padt_lvl();
+        padt_set(s > 0 ? (l < 3u ? l + 1u : 3u) : s < 0 ? (l ? l - 1u : 0u) : (l + 1u) % 4u);
+        break;
+    }
+#endif
     case MI_LIGHTS:
-    case MI_KEYS: {                                    /* brighter / dimmer (stops at the ends); OCT+ steps round */
+#if !BOARD_SMK37
+    case MI_KEYS:
+#endif
+    {                                                  /* brighter / dimmer (stops at the ends); OCT+ steps round */
         uint8_t *v = i == MI_LIGHTS ? &lights_lvl : &lights_keys;
         uint32_t n = i == MI_LIGHTS ? LIGHTS_N : KEYS_N;
         if (s > 0 && *v + 1u < n)

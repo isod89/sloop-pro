@@ -19,6 +19,7 @@ hanging TRS notes, a save that never claims to be one when the flash failed).
 |---|---|
 | SLOOP 2.8.1 | the NOTES piano roll and the per-step sheets (OCT+ held), FILTER RESO, STEP ADVANCE, DRUM PREVIEW, the punch-in fade (FX held + SELECT), MIDI Bank Select |
 | Sustain pedal | the PEDAL jack: a footswitch of either polarity (the reading at power-on is "up": plug it in before switching on); the selected synth track sustains, CC 64 goes out over USB and TRS |
+| The pads | triggered as a drum module's: a threshold (HOME menu > LIGHTS > PAD THRESHOLD: LOW, MID, HIGH, MAX), the velocity at the peak of the hit, a 40 ms mask after each note and a retrigger cancel that follows the pad's decay: one tap is one note, also a soft one whose finger stays on the pad; rolls up to 16 hits a second |
 | PAD LIGHTS | HOME menu > LIGHTS > PAD LIGHTS (K8): HIGH (default), MID, LOW; each change lights the 16 pads in the tracks' colours for 1.5 s (a test of every pad) |
 | FADER BANK E | ENV: faders 1–4 set the selected synth track's ATTACK, DECAY, SUSTAIN, RELEASE |
 | TRS MIDI OUT | turned OFF (or a note-off lost to a full buffer): a note-off for every note still on, then sustain off and all notes off — nothing hangs on the other synth |
@@ -162,7 +163,8 @@ them), OCT+ steps the row under the cursor; SEQ PLAY and SEQ REC still start / s
 |---|---|---|---|
 | SCREEN | COLOR, ZOOM | K5, K6 | as SLOOP's |
 | SCREEN | KNOB LAYOUT | K7 | FM-1 (default): K1 MASTER, K2 SELECT, K3 ALGORITHM, K4 PRESETS, K5–K8 the dials. SMK: K1–K4 the dials, K5 MASTER, K6 SELECT, K7 PRESETS, K8 ALGORITHM. The knobs are endless: the new layout works at once. Switched to SMK, the menu's rows move to K1–K4 (K3 switches back) |
-| LIGHTS | LIGHTS, KEYS, NOTES | K5–K7 | as SLOOP's (the button lights) |
+| LIGHTS | LIGHTS, NOTES | K5, K7 | as SLOOP's (the button lights) |
+| LIGHTS | PAD THRESHOLD | K6 | how firm a tap starts a note: LOW, MID (default), HIGH, MAX (in the FM-1's KEYS setting: the SMK-37's keys have no lights). Raise it if a light touch sounds when it should not; lower it if soft taps are missed |
 | LIGHTS | PAD LIGHTS | K8 | the pads' brightness: HIGH (default), MID, LOW; each change shows on the 16 pads for 1.5 s |
 | AUDIO | SPEAKER LOWCUT | K5 | as SLOOP's |
 | AUDIO | LIMITER | K6 | SOFT (default): 9 dB more headroom at the power-on MASTER position, the limiter only near full scale, so a held chord keeps its level; MASTER's top as loud as before (turn it up for loudness). CLASSIC: SLOOP's limiter and MASTER curve |

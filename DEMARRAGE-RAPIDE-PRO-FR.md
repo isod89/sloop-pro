@@ -67,7 +67,7 @@ SLOOP Pro.
 ## 3. Le menu (PATCH maintenu)
 
 K2 change de section, K5–K8 règlent les lignes, OCT+ valide, OCT− ferme :
-SCREEN · LIGHTS (… **PAD LIGHTS** : luminosité des pads HIGH / MID / LOW) · AUDIO (SPEAKER LOWCUT, LIMITER,
+SCREEN · LIGHTS (… **PAD THRESHOLD** : la force qu'il faut pour qu'un pad joue, LOW / MID / HIGH / MAX ; **PAD LIGHTS** : luminosité des pads HIGH / MID / LOW) · AUDIO (SPEAKER LOWCUT, LIMITER,
 FILTER RESO) · USB · SEQ (STEP ADVANCE, DRUM PREVIEW) · PLAY (KEY VELOCITY, BEND UP, BEND DOWN, KNOB ACCEL) ·
 MIDI (TRS MIDI OUT, MODE, CHANNEL, LOCAL) · DAW · SYSTEM (2ND CORE : OFF par défaut, HARDWARE CALIBRATION, …, ABOUT).
 
