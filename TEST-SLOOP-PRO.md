@@ -80,8 +80,8 @@ Ligne de commande (la même chose) : `python tools\fm1_install.py build\release\
 | 7 | Faders, FADER BANK plusieurs fois | A niveau, B filtre, C reverb, D delay, **E enveloppe** (piste synthé : ATTACK DECAY SUSTAIN RELEASE à l'écran et à l'oreille ; batterie : « ENV: SELECT A SYNTH TRACK ») |
 | 8 | Molettes pitch et mod | Le pitch monte / descend et revient juste au centre ; vibrato |
 | 9 | **Pédale** branchée *avant* d'allumer, pied levé : accord, pédale enfoncée, lâcher les touches | Les notes tiennent, s'arrêtent au pied levé |
-| 9b | Pads (DRUM KIT puis NOTES) : 20 frappes douces, 20 moyennes, 20 fortes, un doigt laissé posé après une frappe douce, un roulement rapide ; puis Menu → LIGHTS → PAD THRESHOLD (K6) sur LOW et HIGH | Une frappe = une note, même douce ; le roulement joue chaque coup ; LOW : un effleurement joue ; HIGH : il faut appuyer plus |
-| 10 | Menu → LIGHTS → PAD LIGHTS (K8) : HIGH / MID / LOW | 1,5 s : les 16 pads deux par deux bleu, vert, jaune, orange, plus ou moins fort. **Un pad de la mauvaise couleur ?** |
+| 9b | Pads (DRUM KIT puis NOTES) : 20 frappes douces, 20 moyennes, 20 fortes, un doigt laissé posé après une frappe douce, un roulement rapide ; puis Menu → PADS → PAD THRESHOLD (K5) sur LOW et HIGH ; si une frappe double encore : PADS → PAD SCOPE, frapper jusqu'à « DOUBLE », photo de l'écran | Une frappe = une note, même douce ; le roulement joue chaque coup ; LOW : un effleurement joue ; HIGH : il faut appuyer plus |
+| 10 | Menu → PADS → PAD LIGHTS (K6) : HIGH / MID / LOW | 1,5 s : les 16 pads deux par deux bleu, vert, jaune, orange, plus ou moins fort. **Un pad de la mauvaise couleur ?** |
 | 11 | Synthé sur la prise TRS (adaptateur TRS → DIN) ; tenir une note, menu → MIDI → TRS MIDI OUT sur OFF | Le synthé joue, puis **se tait** au OFF |
 | 12 | SEQ → page NOTES ; OCT+ maintenu sur un pas | Piano roll ; bande du bas SLIDE, NUDGE, FILL, MOVE, COPY, DELETE |
 | 13 | Motif, SAVE dans une section, éteindre, rallumer, recharger | Tout revient (motif, sons, réglages, PAD LIGHTS) |

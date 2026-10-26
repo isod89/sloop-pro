@@ -67,9 +67,17 @@ SLOOP Pro.
 ## 3. Le menu (PATCH maintenu)
 
 K2 change de section, K5–K8 règlent les lignes, OCT+ valide, OCT− ferme :
-SCREEN · LIGHTS (… **PAD THRESHOLD** : la force qu'il faut pour qu'un pad joue, LOW / MID / HIGH / MAX ; **PAD LIGHTS** : luminosité des pads HIGH / MID / LOW) · AUDIO (SPEAKER LOWCUT, LIMITER,
+SCREEN · LIGHTS · PADS (**PAD THRESHOLD** : la force qu'il faut pour qu'un pad joue, LOW / MID / HIGH / MAX ; **PAD LIGHTS** : luminosité des pads HIGH / MID / LOW ; **PAD SCOPE** : ce que mesure le pad frappé, voir plus bas) · AUDIO (SPEAKER LOWCUT, LIMITER,
 FILTER RESO) · USB · SEQ (STEP ADVANCE, DRUM PREVIEW) · PLAY (KEY VELOCITY, BEND UP, BEND DOWN, KNOB ACCEL) ·
 MIDI (TRS MIDI OUT, MODE, CHANNEL, LOCAL) · DAW · SYSTEM (2ND CORE : OFF par défaut, HARDWARE CALIBRATION, …, ABOUT).
+
+## Un pad qui joue deux fois : PAD SCOPE
+
+Menu (PATCH maintenu) → section **PADS** → **PAD SCOPE**, OCT+. L'écran montre ce que mesure le dernier pad frappé
+(430 ms) : en blanc la force, en jaune le seuil (PAD THRESHOLD), en rouge le seuil qu'un nouveau coup doit dépasser,
+en vert les notes jouées, en bleu leur relâchement. Quand un pad joue deux notes en moins de 250 ms, l'image s'arrête
+et affiche **DOUBLE**, l'écart en ms et les deux vélocités : **prenez une photo de l'écran** et envoyez-la. OCT+ :
+recommencer ; OCT- : revenir au menu. (Un pad frappé s'allume en blanc un instant.)
 
 ## Vos samples
 

@@ -12,78 +12,59 @@
 /* ------------------------------------------------------------ menu --- */
 /* (2.7: USB SERIAL only in a build with the serial console, FELUCCA_CDC=1: the FM-1's build has none. SMK-37: four rows a
  * section (K5..K8), so the USB rows have a section of their own) */
-enum { MI_COLOR, MI_ZOOM,
 #if BOARD_SMK37
-       MI_KLAY,                                    /* SMK-37: SCREEN > KNOB LAYOUT (panel.c knob_enc), the third row as before */
-#else
-       MI_ACCEL,
-#endif
-       MI_LIGHTS, MI_KEYS, MI_NOTES,
-#if BOARD_SMK37
-       MI_PADL,                                    /* SLOOP Pro: LIGHTS > PAD LIGHTS (lcd.c padled_dim) */
-#endif
-       MI_LOWCUT,
-#if BOARD_SMK37
-       MI_LIMIT, MI_FRESO,                         /* SMK-37: AUDIO > LIMITER (fx.c lim_classic), FILTER RESO */
-       MI_USB,                                     /* SMK-37: USB > USB AUDIO, USB SERIAL, USB RATE */
-#if FELUCCA_CDC
-       MI_SERIAL,
-#endif
-       MI_RATE,
-       MI_ADV, MI_DPREV,                           /* SEQ > STEP ADVANCE, DRUM PREVIEW */
-       MI_VEL, MI_BUP, MI_BDN, MI_ACCEL,           /* SMK-37: PLAY > KEY VELOCITY (smk_vel.h), BEND UP, BEND DOWN (smk_wheel.h),
-                                                    * KNOB ACCEL (SLOOP's, here) */
-       MI_TRS, MI_MODE, MI_DCH, MI_LOCAL,          /* SMK-37: MIDI > TRS MIDI OUT (smk_midi_out.h), MODE, CHANNEL, LOCAL
-                                                    * (smk_daw.h) */
-       MI_DMAP, MI_KREL, MI_DEDIT, MI_DRESET,      /* SMK-37: DAW > CC MAP, KNOBS, EDIT MAP, RESET MAP (ui_daw.c) */
-#else
+/* SMK-37: SCREEN (KNOB LAYOUT, panel.c knob_enc), LIGHTS (the buttons'), PADS (PAD THRESHOLD in the KEYS setting, smk_input.h
+ * smk_pad_level; PAD LIGHTS, lcd.c padled_dim; PAD SCOPE, ui_scope.c), AUDIO (LIMITER, fx.c lim_classic; FILTER RESO),
+ * USB, SEQ (STEP ADVANCE, DRUM PREVIEW), PLAY (KEY VELOCITY, smk_vel.h; BEND UP / DOWN, smk_wheel.h; KNOB ACCEL), MIDI (TRS
+ * MIDI OUT, smk_midi_out.h; MODE, CHANNEL, LOCAL, smk_daw.h), DAW (ui_daw.c), SYSTEM */
+enum { MI_COLOR, MI_ZOOM, MI_KLAY,
+       MI_LIGHTS, MI_NOTES,
+       MI_KEYS, MI_PADL, MI_SCOPE,
+       MI_LOWCUT, MI_LIMIT, MI_FRESO,
        MI_USB,
 #if FELUCCA_CDC
        MI_SERIAL,
 #endif
-       MI_RATE, MI_FRESO, MI_ADV, MI_DPREV,
-#endif
+       MI_RATE,
+       MI_ADV, MI_DPREV,
+       MI_VEL, MI_BUP, MI_BDN, MI_ACCEL,
+       MI_TRS, MI_MODE, MI_DCH, MI_LOCAL,
+       MI_DMAP, MI_KREL, MI_DEDIT, MI_DRESET,
        MI_CPU1, MI_PANEL, MI_LCLEAR, MI_ABOUT, MI_COUNT };
-static const char *const MI_NAME[MI_COUNT] = {"COLOR", "ZOOM",
-#if BOARD_SMK37
-                                              "KNOB LAYOUT",
-#else
-                                              "KNOB ACCEL",
-#endif
-#if BOARD_SMK37
-                                              "LIGHTS", "PAD THRESHOLD", "NOTES",   /* (SMK-37: no lit keys; KEYS's setting
-                                                                                     * is the pads' threshold) */
-                                              "PAD LIGHTS",
-#else
-                                              "LIGHTS", "KEYS", "NOTES",
-#endif
-                                              "SPEAKER LOWCUT",
-#if BOARD_SMK37
-                                              "LIMITER", "FILTER RESO", "USB AUDIO",
+static const char *const MI_NAME[MI_COUNT] = {"COLOR", "ZOOM", "KNOB LAYOUT",
+                                              "LIGHTS", "NOTES",
+                                              "PAD THRESHOLD", "PAD LIGHTS", "PAD SCOPE",
+                                              "SPEAKER LOWCUT", "LIMITER", "FILTER RESO",
+                                              "USB AUDIO",
 #if FELUCCA_CDC
                                               "USB SERIAL",
 #endif
                                               "USB RATE", "STEP ADVANCE", "DRUM PREVIEW",
                                               "KEY VELOCITY", "BEND UP", "BEND DOWN", "KNOB ACCEL", "TRS MIDI OUT",
                                               "MODE", "CHANNEL", "LOCAL", "CC MAP", "KNOBS", "EDIT MAP", "RESET MAP",
+                                              "2ND CORE", "HARDWARE CALIBRATION", "MIDI LEARN CLEAR", "ABOUT"};
+enum { MS_SCREEN, MS_LIGHTS, MS_PADS, MS_AUDIO, MS_USB, MS_SEQ, MS_PLAY, MS_MIDI, MS_DAW, MS_SYSTEM, MS_COUNT };
+static const char *const MS_NAME[MS_COUNT] = {"SCREEN", "LIGHTS", "PADS", "AUDIO", "USB", "SEQ", "PLAY", "MIDI", "DAW",
+                                              "SYSTEM"};
+static const uint8_t MS_FIRST[MS_COUNT + 1] = {MI_COLOR, MI_LIGHTS, MI_KEYS, MI_LOWCUT, MI_USB, MI_ADV, MI_VEL, MI_TRS,
+                                               MI_DMAP, MI_CPU1, MI_COUNT};
+_Static_assert(MI_LIGHTS - MI_COLOR <= 4 && MI_KEYS - MI_LIGHTS <= 4 && MI_LOWCUT - MI_KEYS <= 4 && MI_USB - MI_LOWCUT <= 4 &&
+               MI_ADV - MI_USB <= 4 && MI_VEL - MI_ADV <= 4 && MI_TRS - MI_VEL <= 4 && MI_DMAP - MI_TRS <= 4 &&
+               MI_CPU1 - MI_DMAP <= 4 && MI_COUNT - MI_CPU1 <= 4, "SMK-37: four rows a section (K5..K8)");
+#define MS_GAP 10                                  /* (ten tabs: those around this one that fit, < > for the rest) */
 #else
+enum { MI_COLOR, MI_ZOOM, MI_ACCEL, MI_LIGHTS, MI_KEYS, MI_NOTES, MI_LOWCUT, MI_USB,
+#if FELUCCA_CDC
+       MI_SERIAL,
+#endif
+       MI_RATE, MI_FRESO, MI_ADV, MI_DPREV, MI_CPU1, MI_PANEL, MI_LCLEAR, MI_ABOUT, MI_COUNT };
+static const char *const MI_NAME[MI_COUNT] = {"COLOR", "ZOOM", "KNOB ACCEL", "LIGHTS", "KEYS", "NOTES", "SPEAKER LOWCUT",
                                               "USB AUDIO",
 #if FELUCCA_CDC
                                               "USB SERIAL",
 #endif
                                               "USB RATE", "FILTER RESO", "STEP ADVANCE", "DRUM PREVIEW",
-#endif
                                               "2ND CORE", "HARDWARE CALIBRATION", "MIDI LEARN CLEAR", "ABOUT"};
-#if BOARD_SMK37
-enum { MS_SCREEN, MS_LIGHTS, MS_AUDIO, MS_USB, MS_SEQ, MS_PLAY, MS_MIDI, MS_DAW, MS_SYSTEM, MS_COUNT };
-static const char *const MS_NAME[MS_COUNT] = {"SCREEN", "LIGHTS", "AUDIO", "USB", "SEQ", "PLAY", "MIDI", "DAW", "SYSTEM"};
-static const uint8_t MS_FIRST[MS_COUNT + 1] = {MI_COLOR, MI_LIGHTS, MI_LOWCUT, MI_USB, MI_ADV, MI_VEL, MI_TRS, MI_DMAP,
-                                               MI_CPU1, MI_COUNT};
-_Static_assert(MI_LIGHTS - MI_COLOR <= 4 && MI_LOWCUT - MI_LIGHTS <= 4 && MI_USB - MI_LOWCUT <= 4 && MI_ADV - MI_USB <= 4 &&
-               MI_VEL - MI_ADV <= 4 && MI_TRS - MI_VEL <= 4 && MI_DMAP - MI_TRS <= 4 && MI_CPU1 - MI_DMAP <= 4 &&
-               MI_COUNT - MI_CPU1 <= 4, "SMK-37: four rows a section (K5..K8)");
-#define MS_GAP 10                                  /* (nine tabs: those around this one that fit, < > for the rest) */
-#else
 enum { MS_SCREEN, MS_LIGHTS, MS_AUDIO, MS_SEQ, MS_SYSTEM, MS_COUNT };   /* (2.7.1: SEQ) */
 static const char *const MS_NAME[MS_COUNT] = {"SCREEN", "LIGHTS", "AUDIO", "SEQ", "SYSTEM"};   /* (AUDIO: and USB) */
 static const uint8_t MS_FIRST[MS_COUNT + 1] = {MI_COLOR, MI_LIGHTS, MI_LOWCUT, MI_ADV, MI_CPU1, MI_COUNT};   /* rows of each */
@@ -244,6 +225,12 @@ UI_SMALL static const char *mi_value(uint32_t i, uint16_t *c)
 UI_SMALL static void draw_menu(void)
 {
     uint32_t i, pass, sec = mi_sec(ui.menu_sel % MI_COUNT);
+#if BOARD_SMK37
+    if (ui.menu == 3) {                             /* PADS > PAD SCOPE: its own screen (ui_scope.c) */
+        scope_draw();
+        return;
+    }
+#endif
     uint32_t sig = ui.menu * 7u + ui.menu_sel * 131u + settings.palette * 1009u + settings.lowcut * 7919u +
                    settings.zoom * 104729u + lights_lvl * 1299709u + lights_keys * 15485863u + ml_count() * 2654435u +
                    lights_notes * 32452843u + usb_full * 49979687u + usb_serial * 86028121u + usb_rate * 15486719u + theme_shown() * 32452867u + theme.crc + cpu1_off * 122949829u +
@@ -404,6 +391,9 @@ UI_SMALL static void menu_close(void)
         settings_later = 1;                            /* (a flash write stops the audio: once stopped) */
     else
         settings_save();                               /* palette / panel table, if changed */
+#if BOARD_SMK37
+    scope_close();                                     /* (PAD SCOPE: no more recording) */
+#endif
     ui.menu = 0;
     ui.force = 1;
     go_home();
@@ -586,6 +576,15 @@ UI_SMALL static void mi_set(uint32_t i, int32_t s)
             ui.force = 1;
         }
         break;
+#if BOARD_SMK37
+    case MI_SCOPE:                                     /* PAD SCOPE: OCT+ opens it (ui_scope.c) */
+        if (!s) {
+            scope_open();
+            ui.menu = 3;
+            ui.force = 1;
+        }
+        break;
+#endif
     default:
         break;
     }
@@ -598,12 +597,24 @@ UI_SMALL static void menu_input(uint32_t pressed)
     uint32_t k, ok = (pressed >> panel.btn[B_OCTUP]) & 1u, back = (pressed >> panel.btn[B_OCTDN]) & 1u;
     uint32_t sel = ui.menu_sel % MI_COUNT, sec = mi_sec(sel), n = MS_FIRST[sec + 1u] - MS_FIRST[sec];
     if (back) {
+#if BOARD_SMK37
+        if (ui.menu == 3)
+            scope_close();
+        if (ui.menu >= 2)
+#else
         if (ui.menu == 2)
+#endif
             ui.menu = 1, ui.force = 1;
         else
             menu_close();
         return;
     }
+#if BOARD_SMK37
+    if (ui.menu == 3 && ok) {                          /* PAD SCOPE: OCT+ records again */
+        smk_scope_rearm();
+        ui.force = 1;
+    }
+#endif
     if (ui.menu != 1) {
         enc_drop();
         return;
