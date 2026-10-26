@@ -11,7 +11,8 @@
 Each file becomes one zone: mono, 22050 Hz, IMA ADPCM (sampleio.py, the same encoder
 as the built-in sets and the web editor). ROOT is a MIDI note (default: from the file
 name, C4 = 60, else 60); without LO-HI the zones split the keyboard between their roots.
-A slot holds 80 KiB (about 7 s at 22050 Hz). Protocol: web/EDITOR_PROTOCOL.md, cmds 11..15.
+A slot holds 80 KiB (about 7 s at 22050 Hz); the SMK-37's (SLOOP Pro) 40 KiB, stored at 11025 Hz when the
+files do not fit at 22050 Hz (about 7 s too). Protocol: web/EDITOR_PROTOCOL.md, cmds 11..15.
 Needs mido (and a backend such as python-rtmidi) for the device commands.
 """
 import sys
@@ -68,9 +69,10 @@ class Link:
         raise TimeoutError(f"no reply to cmd {cmd}")
 
 
-def build(name, specs):
-    """specs: "file.wav[:ROOT[:LO-HI]]" -> (header, ADPCM data) for SMP_END / SMP_WRITE"""
-    zones = []
+def build(name, specs, slot_kib=80):
+    """specs: "file.wav[:ROOT[:LO-HI]]" -> (header, ADPCM data) for SMP_END / SMP_WRITE. slot_kib: the unit's slot
+    (SMP_INFO): the SMK-37's 40 KiB slot is stored at 11025 Hz when the files do not fit at 22050 Hz (as the editor)"""
+    zones, srcs = [], []
     for spec in specs:
         parts = spec.split(":")
         # Keep a Windows drive prefix separate from the optional :ROOT:LO-HI suffix.
@@ -80,22 +82,37 @@ def build(name, specs):
         root = int(parts[1]) if len(parts) > 1 and parts[1] else sio.note_from_name(path.stem)
         lo, hi = (int(v) for v in parts[2].split("-")) if len(parts) > 2 else (None, None)
         sr, x = sio.read_any_wav(path)
+        srcs.append((sr, x))
         x = sio.resample(x, sr, sio.SLOT_RATE)
         if not x:
             raise ValueError(f"{path}: no audio")
         zones.append((sio.to_int16(x), root, lo, hi))
-    return sio.user_slot(name, zones)
+    max_data = min(slot_kib * 1024, sio.SLOT_SIZE) - sio.SLOT_DATA_OFF
+    try:
+        return sio.user_slot(name, zones, max_data)
+    except ValueError as e:
+        if slot_kib * 1024 >= sio.SLOT_SIZE or not str(e).startswith("too long"):
+            raise
+    half = sio.SLOT_RATE // 2
+    print(f"{name}: stored at {half} Hz to fit the {slot_kib} KiB slot")
+    zones = [(sio.to_int16(sio.resample(x, sr, half)), z[1], z[2], z[3]) for (sr, x), z in zip(srcs, zones)]
+    return sio.user_slot(name, zones, max_data, half)
 
 
 def main():
     if len(sys.argv) < 2 or sys.argv[1] not in ("info", "load", "erase", "build"):
         sys.exit(__doc__)
     cmd = sys.argv[1]
+    link = None
     if cmd in ("load", "build"):
         if len(sys.argv) < 5:
             sys.exit(__doc__)
+        kib = 80
+        if cmd == "load":                                  # the unit's slot size (SMP_INFO: the SMK-37's 40 KiB)
+            link = Link()
+            kib = link.req(15, [])[1] or 80
         try:
-            hdr, data = build(sys.argv[3] if cmd == "load" else sys.argv[2], sys.argv[4:])
+            hdr, data = build(sys.argv[3] if cmd == "load" else sys.argv[2], sys.argv[4:], kib)
         except (OSError, ValueError) as e:
             sys.exit(f"cannot build the slot: {e}")
         if cmd == "build":
@@ -107,7 +124,7 @@ def main():
         if len(sys.argv) < 3 or sys.argv[2] not in ("1", "2", "3", "4"):
             sys.exit("SLOT is 1, 2, 3 or 4 (USR4: SLOOP 2.4 and later)")
         slot = int(sys.argv[2]) - 1
-    link = Link()
+    link = link or Link()
     if cmd == "info":
         r = link.req(15, [])
         n, i = r[0], 2

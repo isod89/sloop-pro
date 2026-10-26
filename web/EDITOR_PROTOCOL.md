@@ -118,7 +118,8 @@ An absent status byte retains the original reply format.
 (bit j = bit 7 of byte j).
 
 **User sample slot** (80 KiB each: USR1..USR3 at flash 0xA0000, 0xB4000, 0xC8000 and, from SLOOP 2.4, USR4 at
-0xE7000 — SMP_INFO says how many; SAMPLE / GRAIN sets USR1..USR4, the drum track's KIT USR1..USR4 and USR3+4; reference uploader
+0xE7000; the SMK-37 (SLOOP Pro): four of 40 KiB at 0xC2000, 0xCC000, 0xD6000, 0xE0000, the editor storing a slot at
+11025 Hz (each zone's rate) when it does not fit at 22050 Hz — SMP_INFO says how many and their size; SAMPLE / GRAIN sets USR1..USR4, the drum track's KIT USR1..USR4 and USR3+4; reference uploader
 `tools/fm1_sample_upload.py`, slot builder `sampleio.user_slot`; the editor's port of it is
 checked byte for byte by `web/test_web.mjs`): header at 0, ADPCM data at 512.
 

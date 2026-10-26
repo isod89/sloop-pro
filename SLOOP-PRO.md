@@ -66,10 +66,16 @@ firmwares take only their own packages, so go back to the M-Vave firmware first 
 then install SLOOP Pro. Back up your projects there first: their data is not SLOOP Pro's, and SLOOP Pro clears
 another firmware's store at its first start.
 
+**Your samples:** four slots, USR1 to USR4, as on the FM-1 (SAMPLE, GRAIN, the drum kits, KIT USR3+4). The SMK-37 has
+half the FM-1's free flash for them, 40 KiB a slot: the web editor stores a slot at 22050 Hz when its sounds fit
+(about 3.6 s) and at 11025 Hz when they do not, so a slot still holds about 7 s, as on the FM-1 (the editor says
+"11 kHz" when it did). SLOOP Pro 2.8.1 had two 80 KiB slots (USR3 and USR4 refused samples): after the update, send
+your samples again from your WAV files.
+
 **Back to the stock firmware:** install the official package for your model with M-Vave's own updater (M-UPGRADE),
 or give it to the installer: `python3 tools/fm1_install.py --force SMK-37_Pro_016.fwsc` (the installer reads the
 stock package format). The SLOOP build keeps the stock update protocol, so the stock tools see the keyboard as usual.
-The user sample slots USR1 / USR2 (0xC2000–0xE9FFF) are where the stock firmware keeps its key, knob and fader
+The user sample slots USR1 to USR4 (0xC2000–0xE9FFF) are where the stock firmware keeps its key, knob and fader
 mapping; it trusts that area while its end marker `usrdata` (0xEAFF8) is there. SLOOP erases the marker's sector
 (0xEA000, the only sector it may touch there) before it first stores a sample in USRFLASH, and at power-on when the
 marker sits over sample data, so the stock firmware rebuilds its factory mapping; an untouched stock mapping (with

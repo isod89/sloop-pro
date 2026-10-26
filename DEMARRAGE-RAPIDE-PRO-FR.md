@@ -71,6 +71,14 @@ SCREEN · LIGHTS (… **PAD LIGHTS** : luminosité des pads HIGH / MID / LOW) ·
 FILTER RESO) · USB · SEQ (STEP ADVANCE, DRUM PREVIEW) · PLAY (KEY VELOCITY, BEND UP, BEND DOWN, KNOB ACCEL) ·
 MIDI (TRS MIDI OUT, MODE, CHANNEL, LOCAL) · DAW · SYSTEM (2ND CORE : OFF par défaut, HARDWARE CALIBRATION, …, ABOUT).
 
+## Vos samples
+
+Quatre emplacements, **USR1 à USR4**, comme sur le FM-1 (moteurs SAMPLE et GRAIN, kits de batterie, KIT USR3+4), envoyés
+depuis l'éditeur web (onglet Samples). Le SMK-37 a moitié moins de place que le FM-1 (40 Ko par emplacement) :
+l'éditeur garde la qualité 22 kHz quand ça rentre (environ 3,6 s), sinon il passe l'emplacement en 11 kHz (il affiche
+« 11 kHz ») pour garder environ 7 s, comme sur le FM-1. Après la mise à jour depuis SLOOP Pro 2.8.1 (deux
+emplacements), renvoyez vos samples depuis vos fichiers WAV.
+
 ## 4. Liste de tests (à cocher sur le clavier)
 
 Notez ce qui va et ce qui ne va pas, avec le modèle (Pro / Elite / MKE) et le numéro de ligne :

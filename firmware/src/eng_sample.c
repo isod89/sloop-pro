@@ -36,23 +36,23 @@ static uint32_t pow2_q16(int32_t d16)
 }
 
 /* ---- user sample slots (loaded from the web editor into flash, see web/EDITOR_PROTOCOL.md)
- * 4 slots of 80 KiB: 3 at flash 0xA0000.., USR4 at 0xE7000 (Felucca data regions), read through the plain XIP
+ * 4 slots of 80 KiB (the SMK-37: 40 KiB): 3 at flash 0xA0000.., USR4 at 0xE7000 (Felucca data regions), read through the plain XIP
  * window. Slot = header (magic, count, name, data length, CRC32) + up to 16 zones in the
  * smp_zone_t layout (off relative to the slot's data at +512) + IMA ADPCM data. */
 #include "../hal/fm1_xip.h"   /* relative: hostsim includes this file too */
 #define SMP_USER_SLOTS 4
-#define SMP_USER_SIZE 0x14000u
 #if BOARD_SMK37
-/* SMK-37 Pro: only USR1 / USR2 have flash (USRFLASH 0xC2000..0xE9FFF, FL_SMP in fm1_flash.h); USR3 / USR4
- * stay empty: never scanned, their erase / write refused (SMP_USER_HAS). Their offset is a dummy that no
- * flash window accepts. */
-#define SMP_USER_FLASH_SLOTS 2u
-#define SMP_USER_BASE 0xC2000u                      /* USR1, USR2: 0xC2000..0xE9FFF */
-#define SMP_USER_NONE 0xEA000u                      /* USR3 / USR4: no storage */
-#define SMP_USER_HAS(k) ((uint32_t)(k) < SMP_USER_FLASH_SLOTS)
-#define SMP_USER_OFF(k) (SMP_USER_HAS(k) ? SMP_USER_BASE + (uint32_t)(k) * SMP_USER_SIZE : SMP_USER_NONE)
-_Static_assert(SMP_USER_BASE + SMP_USER_FLASH_SLOTS * SMP_USER_SIZE <= 0xEA000u, "SMK: user slots past FL_SMP");
+/* SMK-37 (SLOOP Pro): USRFLASH 0xC2000..0xE9FFF (FL_SMP in fm1_flash_map.h) holds the four slots, 40 KiB each (the
+ * FM-1's 80 KiB: the SMK-37 has half the free flash; the rest is its calibration and stock resources). USR1..USR4
+ * as on the FM-1; the editor stores a slot at 11025 Hz when its sounds do not fit at 22050 Hz (each zone has its
+ * own rate), so a slot still holds about 7 s. (SLOOP Pro 2.8.1 had two 80 KiB slots there and USR3 / USR4 empty.) */
+#define SMP_USER_SIZE 0xA000u
+#define SMP_USER_BASE 0xC2000u                      /* USR1..USR4: 0xC2000, 0xCC000, 0xD6000, 0xE0000 (..0xE9FFF) */
+#define SMP_USER_HAS(k) 1
+#define SMP_USER_OFF(k) (SMP_USER_BASE + (uint32_t)(k) * SMP_USER_SIZE)
+_Static_assert(SMP_USER_BASE + SMP_USER_SLOTS * SMP_USER_SIZE <= 0xEA000u, "SMK: user slots past FL_SMP");
 #else
+#define SMP_USER_SIZE 0x14000u
 #define SMP_USER_BASE 0xA0000u                      /* USR1..USR3: 0xA0000..0xDBFFF */
 #define SMP_USER4_BASE 0xE7000u                     /* USR4 (2.4): the free flash after the FM6 bank, 0xE7000..0xFAFFF */
 #define SMP_USER_HAS(k) 1

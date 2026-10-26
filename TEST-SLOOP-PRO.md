@@ -87,6 +87,7 @@ Ligne de commande (la même chose) : `python tools\fm1_install.py build\release\
 | 14 | < et > ensemble (mode DAW), un logiciel ouvert | Notes, encodeurs, faders, pads envoient du MIDI ; < + > revient en SYNTH |
 | 15 | `OPEN-EDITOR-PRO.bat` → Connect | Connecté ; Sound, Steps, DAW MAP ; Projects → Backup enregistre un fichier |
 | 16 | Réinstaller SLOOP Pro par-dessus | « Terminé », les projets sont toujours là |
+| 16b | Éditeur → Samples : un WAV court (2–3 s) dans USR3, un long (6–7 s) dans USR4 ; un kit de batterie dans USR3+4 ; SAMPLE (SET USR3, USR4) et KIT USR3+4 sur le clavier | Les deux envois réussissent (le long : « 11 kHz ») ; USR3 et USR4 jouent ; le kit joue |
 | 17 | (facultatif) Retour M-VAVE : Backup, Réglages → « Prepare the return to M-Vave », M-UPGRADE + firmware officiel ; puis réinstaller SLOOP Pro | Clavier d'origine, étalonnage intact ; SLOOP Pro se réinstalle |
 
 ## 6. Ce qu'il faut renvoyer

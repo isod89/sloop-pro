@@ -91,6 +91,26 @@ async function editorMock() {
   rc = rc || E.parse[E.CMD.SMP_END](await rq(E.req.smpEnd(1, hdr), { timeout: 2000, retries: 0 })).rc;
   const si = E.parse[E.CMD.SMP_INFO](await rq(E.req.smpInfo()));
   ok(rc === 0 && si.slots[1].zones === 1 && si.slots[1].name === "TEST", "editor: sample upload (CRC checked by the mock)");
+  /* SLOOP Pro: the SMK-37's 40 KiB slots (SMP_INFO): what fits at 22050 Hz stays at 22050 Hz; more is stored at 11025 Hz
+     (the rate field, the loop points halved), so a slot holds about 7 s as on the FM-1; too much for that is refused */
+  {
+    const v = (sl, o) => new DataView(sl.hdr.buffer).getUint32(o, true);
+    const tone = (n) => Int16Array.from({ length: n }, (_, i) => Math.round(9000 * Math.sin(i / 9)));
+    E.SMP.setSlot(40);
+    const roomOk = E.SMP.MAX_DATA === 40 * 1024 - 512 && E.SMP.HALF && E.SMP.room() > 2 * E.SMP.MAX_DATA - 100;
+    const shortS = E.buildSlot("S", [{ s: tone(60000), root: 60 }]);         /* 2.7 s: 30000 B, fits */
+    const longS = E.buildSlot("L", [{ s: tone(150000), root: 60, loop: 2, ls: 40000, le: 140000 }]);   /* 6.8 s */
+    let refused = false;
+    try { E.buildSlot("X", [{ s: tone(170000), root: 60 }]); } catch (e) { refused = /too long/.test(e.message); }
+    ok(roomOk && !shortS.half && v(shortS, 48) === 32768 && longS.half && v(longS, 48) === 16384 && longS.data.length <= E.SMP.MAX_DATA &&
+       Math.abs(v(longS, 36) - 75000) < 4 && Math.abs(v(longS, 40) - 20000) < 50 && Math.abs(v(longS, 44) - 70000) < 50 && refused,
+      `SMK-37 40 KiB slot: 2.7 s at 22050 Hz, 6.8 s at 11025 Hz (${longS.data.length} B, loop halved), 7.7 s refused`);
+    E.SMP.setSlot(80);
+    let r80 = false;
+    try { E.buildSlot("L", [{ s: tone(150000), root: 60 }]); } catch (e) { r80 = true; }
+    ok(!E.SMP.HALF && E.SMP.MAX_DATA === 0x14000 - 512 && !r80 && !E.buildSlot("L", [{ s: tone(150000), root: 60 }]).half,
+      "FM-1 80 KiB slot: 6.8 s stays at 22050 Hz, never halved");
+  }
   /* 2.7: a file's loop (Samples page): LOOP+TAIL's points on rising zero crossings, the zone looped = 2 (held), the
      decoder's state at the loop start; LOOP the whole file; ONE SHOT as before */
   {

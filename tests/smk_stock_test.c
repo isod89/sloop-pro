@@ -75,6 +75,14 @@ int main(void)
     memcpy(nor + 0xD6000, "FSMP", 4);
     st_stock_boot();
     check("boot, the marker over a sample slot (FSMP at USR2): released", tag_erases == 1 && !tagged());
+    stock();                                       /* SLOOP Pro: four 40 KiB slots, USR2 at 0xCC000, USR4 at 0xE0000 */
+    memcpy(nor + 0xCC000, "FSMP", 4);
+    st_stock_boot();
+    check("boot, the marker over a sample at 0xCC000 (40 KiB USR2): released", tag_erases == 1 && !tagged());
+    stock();
+    memcpy(nor + 0xE0000, "FSMP", 4);
+    st_stock_boot();
+    check("boot, the marker over a sample at 0xE0000 (40 KiB USR4): released", tag_erases == 1 && !tagged());
     stock();
     memset(nor + 0xC2000, 0xFF, 0x14000);          /* USR1 erased (SMP_ERASE) */
     st_stock_boot();
