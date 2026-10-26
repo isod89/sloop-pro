@@ -221,7 +221,8 @@ int main(int argc, char **argv)
     check(MS_FIRST[MS_PLAY] == MI_VEL && MS_FIRST[MS_MIDI] == MI_TRS && MS_FIRST[MS_DAW] == MI_DMAP && MI_LOCAL - MI_TRS == 3 &&
           MI_DRESET - MI_DMAP == 3 && MI_BDN - MI_VEL == 2 && MI_ACCEL == MI_BDN + 1 && MS_FIRST[MS_MIDI] - MS_FIRST[MS_PLAY] == 4 &&
           MI_KLAY == MI_ZOOM + 1 && MI_LIMIT - MS_FIRST[MS_AUDIO] == 1 && MI_FRESO == MI_LIMIT + 1 &&
-          MS_FIRST[MS_USB] == MI_USB && MS_FIRST[MS_SEQ] == MI_ADV && MI_PADL == MI_NOTES + 1,
+          MS_FIRST[MS_USB] == MI_USB && MS_FIRST[MS_SEQ] == MI_ADV && MI_PADL == MI_KEYS + 1 && MS_FIRST[MS_PADS] == MI_KEYS &&
+          MI_SCOPE == MI_PADL + 1 && MS_FIRST[MS_AUDIO] == MI_SCOPE + 1,
           "PLAY: KEY VELOCITY, BEND UP, BEND DOWN, KNOB ACCEL (2.7); MIDI: TRS, MODE, CHANNEL, LOCAL; DAW: 4; KNOB LAYOUT, LIMITER on their knobs");
     for (i = 0; i < MS_COUNT; i++)
         if (MS_FIRST[i + 1] - MS_FIRST[i] > 4u || MS_FIRST[i + 1] <= MS_FIRST[i])
@@ -252,6 +253,22 @@ int main(int argc, char **argv)
     knob_layout = 0;
     /* SLOOP Pro: the sections that changed: LIGHTS (PAD LIGHTS), AUDIO (LOWCUT, LIMITER, FILTER RESO), USB, SEQ */
     ui.menu_sel = MS_FIRST[MS_LIGHTS]; shot("menu-lights");
+    ui.menu_sel = MS_FIRST[MS_PADS]; shot("menu-pads");
+    {                                               /* PADS: PAD THRESHOLD (MID by default, in the KEYS setting), PAD SCOPE */
+        uint16_t c;
+        uint8_t keep = lights_keys;
+        lights_keys = 0;
+        check(!strcmp(mi_value(MI_KEYS, &c), "MID") && padt_lvl() == 1u, "PAD THRESHOLD: MID by default");
+        mi_set(MI_KEYS, 1);
+        check(!strcmp(mi_value(MI_KEYS, &c), "HIGH") && padt_lvl() == 2u, "PAD THRESHOLD right: HIGH");
+        mi_set(MI_KEYS, -1); mi_set(MI_KEYS, -1); mi_set(MI_KEYS, -1);
+        check(!strcmp(mi_value(MI_KEYS, &c), "LOW") && padt_lvl() == 0u && lights_keys == 1u, "... left: LOW, it stops there");
+        lights_keys = keep;
+        mi_set(MI_SCOPE, 0);
+        check(ui.menu == 3 && scope_up, "PAD SCOPE: OCT+ opens it");
+        ui.menu = 1;
+        scope_close();
+    }
     ui.menu_sel = MS_FIRST[MS_AUDIO]; shot("menu-audio");
     ui.menu_sel = MS_FIRST[MS_USB]; shot("menu-usb");
     ui.menu_sel = MS_FIRST[MS_SEQ]; shot("menu-seq");
