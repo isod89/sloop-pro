@@ -438,7 +438,7 @@ UI_SMALL static void ui_leds(void)
                 if ((h >> p) & 1u)
                     fl_until[p] = fm1_ms + 80u;
                 if ((int32_t)(fm1_ms - fl_until[p]) < 0)
-                    padled_set(p, 170, 170, 170);
+                    padled_set(p, 120, 120, 120);
             }
         }
     }
