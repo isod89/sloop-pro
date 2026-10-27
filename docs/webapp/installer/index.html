@@ -109,7 +109,7 @@
   <p id="status"></p>
   <pre id="log"></pre>
   <a class="ed" href="../editor/" data-t="editor"></a>
-  <a class="ed" href="../editor/sloop-editor.html" download="sloop-editor-2.8.1.html" data-t="edOffline"></a>
+  <a class="ed" href="../editor/sloop-editor.html" download="sloop-editor-2.8.3.html" data-t="edOffline"></a>
   <button id="app" class="ed" hidden data-t="appInstall"></button>
   <hr>
   <h2 data-t="backT"></h2>
@@ -1030,7 +1030,7 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol))
 function setStatus(txt, cls = "") { $("status").textContent = txt; $("status").className = cls; }
 const sayK = (k, arg = "", cls = "") => { lastKey = k; lastArg = arg; lastCls = cls; setStatus(t(k) + arg, cls); };
 const log = (s) => { $("log").textContent += s + "\n"; $("log").scrollTop = 1e9; };
-const meta = {"version": "2.8.1", "pkgs": [{"product": "SMK-37 Pro_900", "pkg": "../../firmware/sloop-pro-2.8.1.fwsc", "sha256": "c7aebc5b7efe38d20b8664d614bb9155d80e4f626412479b3ccd12b9ff38ace9"}, {"product": "SMK-37 Elite_900", "pkg": "../../firmware/sloop-pro-elite-2.8.1.fwsc", "sha256": "71995e7771a48dfbefebe5878f6264ba5b1e2d61c7912790d151131da2a9a3e2"}, {"product": "MKE-P37_900", "pkg": "../../firmware/sloop-pro-mke-2.8.1.fwsc", "sha256": "c1a9881c26d2c283c0ae356955c22dfe6bb8e60a615758fcfaecc96c56acdba5"}]};   // { version, pkgs: [{ product, pkg, sha256 }] }: one package per model
+const meta = {"version": "2.8.3", "pkgs": [{"product": "SMK-37 Pro_900", "pkg": "../../firmware/sloop-pro-2.8.3.fwsc", "sha256": "3d0c7f9a3ecc931897416f7d6bdadddb54dbcd21d2ff1414ef1747cdd3e2b393"}, {"product": "SMK-37 Elite_900", "pkg": "../../firmware/sloop-pro-elite-2.8.3.fwsc", "sha256": "338ee8f26097e6f5a03ad91a46ae34097a08fdc7d225670c01d5e7fd71194b9a"}, {"product": "MKE-P37_900", "pkg": "../../firmware/sloop-pro-mke-2.8.3.fwsc", "sha256": "f3bbd7e095de17aef5d655d3e9149144115578fc61adcdf5efb98c654814f160"}]};   // { version, pkgs: [{ product, pkg, sha256 }] }: one package per model
 const images = new Map();                          // product -> logical image
 let writing = false;
 const lockAll = (on) => {

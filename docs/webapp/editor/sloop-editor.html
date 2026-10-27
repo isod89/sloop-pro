@@ -1930,6 +1930,17 @@ function fmtValue(d, v) {
    byte for byte: web/test_web.mjs compares them. */
 const SMP = { SLOT_SIZE: 0x14000, DATA_OFF: 512, RATE: 22050, HDR_LEN: 32 + 16 * 28, MAX_ZONES: 16 };
 SMP.MAX_DATA = SMP.SLOT_SIZE - SMP.DATA_OFF;
+/* The slot size the connected unit reports (SMP_INFO): the FM-1's 80 KiB, the SMK-37's 40 KiB (SLOOP Pro). A smaller
+   slot is stored at 11025 Hz when its sounds do not fit at 22050 Hz (SMP.HALF, buildSlot), so it holds as many
+   seconds as the FM-1's: SMP.room() is what fits, in bytes of 22050 Hz ADPCM (what the meters and the fitting count) */
+SMP.HALF = false;
+SMP.setSlot = (kib) => {
+  if (!(kib > 0) || kib * 1024 > 0x14000) kib = 80;
+  SMP.SLOT_SIZE = kib * 1024;
+  SMP.MAX_DATA = SMP.SLOT_SIZE - SMP.DATA_OFF;
+  SMP.HALF = SMP.SLOT_SIZE < 0x14000;
+};
+SMP.room = () => SMP.HALF ? SMP.MAX_DATA * 2 - 64 : SMP.MAX_DATA;   /* (halved: a byte a zone more, at most) */
 
 /* groups of up to 7 bytes, each preceded by their top bits */
 function pack7(b) {
@@ -2132,8 +2143,27 @@ const LOOP = {
   },
 };
 
-/* zones: [{s: Int16Array (22050 Hz), root, lo?, hi?, loop?, ls?, le?}] -> {hdr (480 B), data, zones} (sampleio.user_slot) */
+/* a zone at half its rate (11025 Hz): every two samples averaged (resample), its loop points halved */
+function halfZone(z) {
+  const y = resample(Array.from(z.s), SMP.RATE, SMP.RATE / 2), s = new Int16Array(y.length);
+  for (let i = 0; i < y.length; i++) s[i] = Math.max(-32768, Math.min(32767, Math.round(y[i])));
+  const h = { ...z, s };
+  if (z.ls != null) h.ls = Math.floor(z.ls / 2);
+  if (z.le != null) h.le = Math.floor(z.le / 2);
+  return h;
+}
+
+/* zones: [{s: Int16Array (22050 Hz), root, lo?, hi?, loop?, ls?, le?}] -> {hdr (480 B), data, zones, half}
+   (sampleio.user_slot). A slot smaller than the FM-1's (SMP.HALF) that does not fit at 22050 Hz is stored at 11025 Hz */
 function buildSlot(name, zonesIn) {
+  try {
+    return buildSlotAt(name, zonesIn, SMP.RATE);
+  } catch (e) {
+    if (!SMP.HALF || !/^too long/.test(e.message)) throw e;
+    return { ...buildSlotAt(name, zonesIn.map(halfZone), SMP.RATE / 2), half: true };
+  }
+}
+function buildSlotAt(name, zonesIn, hz) {
   const zones = [], parts = [];
   let len = 0;
   for (const z of zonesIn) {
@@ -2164,7 +2194,7 @@ function buildSlot(name, zonesIn) {
   for (let i = 0; i < nm.length; i++) hdr[8 + i] = nm.charCodeAt(i);
   v.setUint32(16, len, true);
   v.setUint32(20, crc32(data), true);
-  const rate = pyRound(SMP.RATE / 44100 * 65536);
+  const rate = pyRound(hz / 44100 * 65536);
   zones.forEach((z, j) => {
     const b = 32 + j * 28;
     [z.off, z.n, z.ls, z.le, rate].forEach((x, k) => v.setUint32(b + k * 4, x >>> 0, true));
@@ -2172,7 +2202,7 @@ function buildSlot(name, zonesIn) {
     v.setInt16(b + 22, z.pred, true);
     hdr[b + 24] = z.idx; hdr[b + 25] = z.lo; hdr[b + 26] = z.hi; hdr[b + 27] = z.looped || 0;
   });
-  return { hdr, data, zones };
+  return { hdr, data, zones, half: false };
 }
 
 /* ------------------------------------------------------------------- chop --- */
@@ -4100,7 +4130,7 @@ const kitLen = (p) => { const full = p.tune ? Math.floor((p.s.length - 1) / Math
 const kitBytes = (pads) => pads.reduce((a, p) => a + (p ? (kitLen(p) + 1) >> 1 : 0), 0);
 /* shorten the longest pads to fit `room` bytes (as CHOP's fit): their len, in samples. bins 2 (KIT USR3+4): the
    room of two slots, no pad longer than one slot holds, and the pads must also share out (kitSplit) */
-function kitFit(pads, room = SMP.MAX_DATA, bins = 1) {
+function kitFit(pads, room = SMP.room(), bins = 1) {
   if (bins > 1) {
     let changed = false;
     for (const p of pads) if (p && ((kitLen(p) + 1) >> 1) > room) { p.len = room * 2 - 1; changed = true; }
@@ -4117,7 +4147,7 @@ function kitFit(pads, room = SMP.MAX_DATA, bins = 1) {
 }
 /* KIT USR3+4: the pads shared out over two slots of `room` bytes each, every pad whole in one (the biggest first,
    each into the emptier slot that takes it): [lanes of USR3, lanes of USR4], or null when they do not fit */
-function kitSplit(pads, room = SMP.MAX_DATA) {
+function kitSplit(pads, room = SMP.room()) {
   const items = pads.map((p, l) => (p ? { l, b: (kitLen(p) + 1) >> 1 } : null)).filter(Boolean).sort((a, b) => b.b - a.b || a.l - b.l);
   const bins = [[], []], used = [0, 0];
   for (const it of items) {
@@ -6237,6 +6267,7 @@ async function load(d) {
     }
     try { d.smp = parse[CMD.SMP_INFO](await d.link.request(req.smpInfo())); }
     catch (e) { if (e.message === "closed") throw e; d.smp = null; }   /* older firmware, or no flash */
+    SMP.setSlot(d.smp ? d.smp.slotKiB : 80);                           /* (the SMK-37: 40 KiB slots) */
     d.keys = paramKeys(d.pdesc, d.info.pe0, d.info.pcount);
     d.fm6 = null;                                     /* v9: the FM6 patch slots (FM6_LIST), else null */
     if (d.info.proto >= 9) {
@@ -8092,7 +8123,7 @@ function renderSamples() {
     }
     u.keymap = el("canvas", { class: "keymap", title: t("smpKeymap") });
     u.list = el("div", { class: "flist" });
-    u.meter = el("progress", { max: SMP.MAX_DATA, value: 0 });
+    u.meter = el("progress", { max: SMP.room(), value: 0 });
     u.meterTxt = el("span", { class: "dim" });
     u.meterBox = el("div", { class: "kitmeter" }, u.meter, u.meterTxt);
     u.clear = el("button", { class: "warn", ic: "symbol_trash", onclick: () => { P.draft.files = []; renderSamples(); } }, t("clearList"));
@@ -8152,10 +8183,11 @@ function renderSamples() {
   u.chopPane.hidden = P.mode !== "chop";
   u.modeHelp.replaceChildren(...t(P.mode === "files" ? "smpFilesHelp" : "smpChopHelp").split("\n").map((x) => el("p", { text: x })));
   const d = P.draft, keys = splitKeys(d.files), bytes = draftBytes(d);
-  u.meter.value = Math.min(bytes, SMP.MAX_DATA);
-  u.meterBox.classList.toggle("over", bytes > SMP.MAX_DATA);
-  u.meterTxt.textContent = (bytes > SMP.MAX_DATA ? t("smpTooBig") + " · " : "") +
-    t("kitUsed").replace("{s}", (d.files.reduce((a, f) => a + f.s.length, 0) / SMP.RATE).toFixed(1)).replace("{t}", (SMP.MAX_DATA * 2 / SMP.RATE).toFixed(1));
+  u.meter.max = SMP.room();
+  u.meter.value = Math.min(bytes, SMP.room());
+  u.meterBox.classList.toggle("over", bytes > SMP.room());
+  u.meterTxt.textContent = (bytes > SMP.room() ? t("smpTooBig") + " · " : "") +
+    t("kitUsed").replace("{s}", (d.files.reduce((a, f) => a + f.s.length, 0) / SMP.RATE).toFixed(1)).replace("{t}", (SMP.room() * 2 / SMP.RATE).toFixed(1));
   u.keymap.hidden = u.list.hidden = !d.files.length;
   u.match.disabled = d.files.length < 2;
   u.list.replaceChildren(...(d.files.length ? [el("div", { class: "frow fhead" }, el("span"), el("span", { text: t("file") }), el("span", { text: t("smpNote") }),
@@ -8227,8 +8259,8 @@ function smpButtons() {
   const P = smpPage, k = P.slot, x = dev.smp.slots[k];
   setLabel(u.send, t("smpSendTo").replace("{n}", k + 1));
   let ready;
-  if (P.mode === "files") ready = P.draft.files.length && draftBytes(P.draft) <= SMP.MAX_DATA && P.draft.name;
-  else { const U = chopUsed(), over = U.use.reduce((a, q) => a + ((q.end - q.start + 1) >> 1), 0) > SMP.MAX_DATA; ready = CH.x && U.use.length && !over && CH.name; }
+  if (P.mode === "files") ready = P.draft.files.length && draftBytes(P.draft) <= SMP.room() && P.draft.name;
+  else { const U = chopUsed(), over = U.use.reduce((a, q) => a + ((q.end - q.start + 1) >> 1), 0) > SMP.room(); ready = CH.x && U.use.length && !over && CH.name; }
   u.send.disabled = smpBusy || !ready;
   for (const b of u.play.children) b.disabled = smpBusy || !x.zones || !hasTracks();
   u.where.textContent = t("smpWhere").replace(/\{n\}/g, k + 1);
@@ -8262,7 +8294,7 @@ const kitDraft = { name: "", slot: 4, pads: Array(16).fill(null), sel: -1 };   /
 const KIT_PAIR = 4;
 const kitSlots = (d = kitDraft.slot) => (d === KIT_PAIR ? [2, 3] : [d]);
 const kitDest = (d = kitDraft.slot) => (d === KIT_PAIR ? "USR3+4" : `USR${d + 1}`);
-const kitRoom = () => SMP.MAX_DATA - 64;                 /* (a slot, less a margin: kitLen may undercount a sample) */
+const kitRoom = () => SMP.room() - 64;                 /* (a slot, less a margin: kitLen may undercount a sample) */
 const kitHas4 = () => !!dev && !!dev.smp && dev.smp.nslots >= 4;
 const KEY_OF_LANE = ["F3", "G3", "A3", "B3", "C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5", "D5", "E5", "F5", "G5"];
 let kitUi = null, kitAudio = null, kitSrc = null;
@@ -8341,7 +8373,7 @@ function renderKits() {
       type: "button", role: "radio", "data-d": d, class: d === KIT_PAIR ? "big" : null, onclick: () => { kitDraft.slot = d; renderKits(); } },
       el("b", { text: kitDest(d) }), el("span", { class: "cap", text: d === KIT_PAIR ? t("kitCapBig") : t("kitCapOne") }), el("span", { class: "now" }))));
     u.destNote = el("p", { class: "destnote" });
-    u.meter = el("progress", { max: SMP.MAX_DATA, value: 0 });
+    u.meter = el("progress", { max: SMP.room(), value: 0 });
     u.meterTxt = el("span", { class: "dim" });
     u.meterBox = el("div", { class: "kitmeter" }, u.meter, u.meterTxt);
     u.prog = el("progress", { max: 1, value: 0, hidden: true });
@@ -8447,7 +8479,7 @@ function kitPadUpdate(l) {
 function kitMeter() {
   const u = kitUi;
   if (!u) return;
-  const n = kitSlots().length, cap = SMP.MAX_DATA * n, bytes = kitBytes(kitDraft.pads), secs = kitDraft.pads.reduce((a, p) => a + (p ? kitLen(p) : 0), 0) / SMP.RATE;
+  const n = kitSlots().length, cap = SMP.room() * n, bytes = kitBytes(kitDraft.pads), secs = kitDraft.pads.reduce((a, p) => a + (p ? kitLen(p) : 0), 0) / SMP.RATE;
   const over = n > 1 ? !kitSplit(kitDraft.pads, kitRoom()) : bytes > kitRoom();
   u.meter.max = cap;
   u.meter.value = Math.min(bytes, cap);
@@ -8527,7 +8559,7 @@ function kitZip() {
   downloadBytes(`${fileSlug(kitDraft.name || "kit")}-drumkit.zip`, zipStore(files));
 }
 
-async function smpInfo() { dev.smp = parse[CMD.SMP_INFO](await rq(req.smpInfo())); }
+async function smpInfo() { dev.smp = parse[CMD.SMP_INFO](await rq(req.smpInfo())); SMP.setSlot(dev.smp.slotKiB); }
 
 async function smpUpload(k, prog, ask = true, d = smpDraft[k]) {   /* (d: the DRUM KIT page's own, not the Samples draft) */
   let built, done = false;
@@ -8556,7 +8588,7 @@ async function smpUpload(k, prog, ask = true, d = smpDraft[k]) {   /* (d: the DR
     }
     r = parse[CMD.SMP_END](await rq(req.smpEnd(k, hdr), { timeout: 2000, retries: 0 }));
     if (r.rc) throw new Error(`end rc ${r.rc} (${SMP_RC[r.rc] || "?"})`);
-    sayK("smpDone", `${k + 1}  ${((performance.now() - t0) / 1000).toFixed(1)} s`);
+    sayK("smpDone", `${k + 1}  ${((performance.now() - t0) / 1000).toFixed(1)} s` + (built.half ? "  (11 kHz)" : ""));   /* (SMK-37: halved to fit) */
     done = true;
   } catch (e) {
     if (e.message !== "closed") sayK("smpFail", e.message);
@@ -8627,7 +8659,7 @@ function chopSetLen(i, len) {                        /* the length of chop i in 
   chopRender();
 }
 function chopFitAll() {                              /* shorten the longest kept chops so they all fit the slot */
-  const { use } = chopUsed(), L = chopFit(use, SMP.MAX_DATA * 2 - use.length);   /* (an odd chop takes half a byte more) */
+  const { use } = chopUsed(), L = chopFit(use, SMP.room() * 2 - use.length);   /* (an odd chop takes half a byte more) */
   if (!isFinite(L)) return;
   for (const c of use) if (c.end - c.start > L) chopOpt(c.i).len = L;
   sayK("chopFitted", chSecs(L));
@@ -8828,7 +8860,7 @@ function chopUI() {
   u.key.value = String(CH.key0);
   u.mode = el("select", {}, el("option", { value: 0, text: t("chopModeKeys") }), el("option", { value: 1, text: t("chopModeOne") }));
   u.max = el("select", {}, ...[["—", 0], ["0.25 s", 0.25], ["0.5 s", 0.5], ["1 s", 1], ["2 s", 2]].map(([n, v]) => el("option", { value: v, text: n })));
-  u.meter = el("progress", { max: SMP.MAX_DATA * 2, value: 0 });
+  u.meter = el("progress", { max: SMP.room() * 2, value: 0 });
   u.room = el("span", { class: "dim" });
   u.list = el("div", { class: "chops" });
   /* the selected chop: keep it or not, its length; and all of them at once */
@@ -8957,10 +8989,11 @@ function chopUI() {
 function chopRender() {
   const u = CH.ui;
   if (!u) return;
-  const U = chopUsed(), { all, use, n } = U, room = SMP.MAX_DATA * 2, over = use.reduce((a, q) => a + ((q.end - q.start + 1) >> 1), 0) > SMP.MAX_DATA;
+  const U = chopUsed(), { all, use, n } = U, room = SMP.room() * 2, over = use.reduce((a, q) => a + ((q.end - q.start + 1) >> 1), 0) > SMP.room();
   const kept = all.filter((c) => !c.off).length;
   u.info.textContent = CH.x ? `${CH.name} · ${chSecs(CH.x.length)} · ${all.length} ${t("chopChops")}` +
     (kept < all.length ? ` (${kept} ${t("chopKept")})` : "") : t("chopHelp");
+  u.meter.max = room;
   u.meter.value = Math.min(room, n);
   u.room.textContent = `${chSecs(n)} / ${chSecs(room)}` + (over ? " " + t("chopTooLong") + " " + t("chopOverHint") : "") +
     (CH.mode === 0 && kept > CHOP.MAX ? " " + t("chopTooMany") : "");
