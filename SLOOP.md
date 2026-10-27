@@ -1,12 +1,14 @@
 <p align="center"><img src="assets/logo/sloop-logo.png" alt="SLOOP" width="480"></p>
 
-# SLOOP 2.8.1
+# SLOOP 2.8.2
 
 **A live groovebox firmware for the M-VAVE FM-1 — for any style.** Four tracks — three synths and a drum machine with 16 sounds on the white keys — twelve synthesis engines (six-operator FM with DX7 patches, and now physical models and noise), 153 sounds, 37 drum kits (808, 909, trap, phonk, house, techno, UK garage, jungle, amapiano, reggaeton, synthwave, chiptune, ambient, jazz…), your own samples, ghost notes and ratchets, parameter locks, micro timing and fills, note repeat, one-key chords, 27 punch-in effects, a vinyl / sidechain / DJ-filter master, and a teenage-engineering-style screen that always shows what your hands can do next. No factory patterns, nothing to load: everything you hear, you play.
 
 SLOOP is free and open source (GPL-3.0), based on [Felucca](https://github.com/hugelton/Felucca) by Leo Kuroshita / Hügelton Instruments.
 
-> **Status:** 2.8.1, running on the FM-1. Still a beta: install at your own risk, and please report what you find (GitHub issues).
+> **Status:** 2.8.2, running on the FM-1. Still a beta: install at your own risk, and please report what you find (GitHub issues).
+
+> **2.8.2:** hold a note under others. On a POLY track, a note you hold while you play others over it keeps sounding while you record (it used to restart and cut out), it goes on through steps that already have notes when you overdub, and in SEQ → NOTES its LEN now runs on under the notes after it (a long bass under a melody) instead of stopping at *NOTE AHEAD*. On a MONO or LEGATO sound (track 1's 808 BOOM), the screen says *MONO: SET VOICE POLY*. MIDI in: a burst too fast to keep no longer leaves a note stuck.
 
 > **2.8.1:** the per-step note sheet (hold **OCT+**) is now a strip along the bottom of the screen instead of a box over the sequencer, so the piano roll and the drum grid stay fully visible; and it reopens on the row you last used, for a quick MOVE.
 

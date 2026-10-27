@@ -32,7 +32,7 @@ M-VAVE SMK-37 — with what the bigger keyboard brings:
 | **MIDI** | USB MIDI and the TRS MIDI OUT jack (nothing left hanging when it is turned off), a full **DAW mode** with your own CC map |
 | **Models** | SMK-37 Pro (and Starrykey 37 Play), SMK-37 Elite, MKE-P37: one package each, the installer picks the right one |
 
-> **Status:** SLOOP Pro 2.8.1, a beta built on SLOOP 2.8.1. Install at your own risk (read the
+> **Status:** SLOOP Pro 2.8.2, a beta built on SLOOP 2.8.2. Install at your own risk (read the
 > [safety notes](SLOOP-PRO.md#safety)); your unit's calibration is never written, and M-VAVE's own updater takes you
 > back at any time.
 
@@ -57,7 +57,7 @@ page's link.
 
 ## For FM-1 owners
 
-This repository still builds SLOOP for the FM-1 (`./build.sh`, unchanged byte for byte from SLOOP 2.8.1). The FM-1
+This repository still builds SLOOP for the FM-1 (`./build.sh`, unchanged byte for byte from SLOOP 2.8.2). The FM-1
 firmware and its installer live at [isod89/sloop-fm1](https://github.com/isod89/sloop-fm1); its README is kept here
 as [README-SLOOP.md](README-SLOOP.md).
 

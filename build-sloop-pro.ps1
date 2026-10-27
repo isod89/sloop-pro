@@ -22,7 +22,7 @@ $distro = if ($env:SLOOP_WSL_DISTRO) { $env:SLOOP_WSL_DISTRO } else { 'MinUI-Bui
 $tc = if ($env:SLOOP_TOOLCHAIN) { $env:SLOOP_TOOLCHAIN } else { '/root/fm1-codex-deps/jieli/toolchain' }
 $sdk = $env:SLOOP_SDK
 if (-not $sdk) {
-  foreach ($c in @('build\deps\ac79', '..\SLOOP\build\deps\ac79', '..\SLOOP\sloop-2.8.1\build\deps\ac79',
+  foreach ($c in @('build\deps\ac79', '..\SLOOP\build\deps\ac79', '..\SLOOP\sloop-2.8.2\build\deps\ac79', '..\SLOOP\sloop-2.8.1\build\deps\ac79',
                    '..\sloop-fm1\build\deps\ac79')) {
     if (Test-Path (Join-Path $c 'cpu\wl82\tools\uboot.boot')) { $sdk = $c; break }
   }
@@ -30,7 +30,7 @@ if (-not $sdk) {
 if (-not $sdk -or -not (Test-Path (Join-Path $sdk 'cpu\wl82\tools\uboot.boot'))) {
   throw "The AC79 SDK files were not found: copy build\deps\ac79 from your sloop-fm1 folder here, or set SLOOP_SDK"
 }
-foreach ($b in @('..\SLOOP\sloop-2.8.1\build', '..\SLOOP\build')) {   # (optional: caches and the audio preview)
+foreach ($b in @('..\SLOOP\sloop-2.8.2\build', '..\SLOOP\sloop-2.8.1\build', '..\SLOOP\build')) {   # (optional: caches and the audio preview)
   if (-not (Test-Path $b)) { continue }
   New-Item -ItemType Directory -Force build | Out-Null
   if (-not (Test-Path build\genwav) -and (Test-Path "$b\genwav")) { Copy-Item -Recurse "$b\genwav" build\genwav }

@@ -6,7 +6,7 @@ GPL-3.0-only unless the table at the end says otherwise ([LICENSING.md](LICENSIN
 
 ## SLOOP Pro
 
-- **isod89 (Sodwave)**, [isod89/sloop-pro](https://github.com/isod89/sloop-pro): SLOOP Pro, the port of SLOOP 2.8.1
+- **isod89 (Sodwave)**, [isod89/sloop-pro](https://github.com/isod89/sloop-pro): SLOOP Pro, the port of SLOOP 2.8.2
   to the SMK-37, its installer page and its tests. The sustain pedal, PAD LIGHTS, FADER BANK E (envelope), the NOTES
   pad mode, the TRS note-off flush and honest save results were built on the ideas credited below.
 
@@ -17,7 +17,7 @@ GPL-3.0-only unless the table at the end says otherwise ([LICENSING.md](LICENSIN
   engines, the sequencer, the web editor, the M-UPGRADE-compatible installer and update loader, the HAL, the FM6
   engine, the INSERT effects, LFO 2, the ANALOG filters, MIDI LEARN, the arpeggiator modes, and much more.
 - **isod89 and the SLOOP contributors**, [isod89/sloop-fm1](https://github.com/isod89/sloop-fm1): SLOOP, the FM-1
-  firmware that SLOOP Pro takes whole (2.8.1). Everyone credited in SLOOP is credited here too:
+  firmware that SLOOP Pro takes whole (2.8.2). Everyone credited in SLOOP is credited here too:
   [README-SLOOP.md, Credits and thanks](README-SLOOP.md#credits-and-thanks).
 
 ## The SMK-37 port

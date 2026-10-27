@@ -1,7 +1,7 @@
 # SLOOP Pro: SLOOP on the M-Vave SMK-37
 
 The M-Vave SMK-37 has the FM-1's chip (JieLi AC791N), so SLOOP runs on it as a target board: `BOARD=smk37`. That
-build is **SLOOP Pro**: SLOOP 2.8.1 with the SMK-37's 37 velocity keys, 16 RGB pads, 4 faders, 8 knobs, wheels,
+build is **SLOOP Pro**: SLOOP 2.8.2 with the SMK-37's 37 velocity keys, 16 RGB pads, 4 faders, 8 knobs, wheels,
 pedal and TRS MIDI out. Everything SMK-37-specific sits behind `BOARD_SMK37`; the FM-1 build is SLOOP, unchanged,
 byte for byte.
 
@@ -17,6 +17,7 @@ hanging TRS notes, a save that never claims to be one when the flash failed).
 
 | | |
 |---|---|
+| SLOOP 2.8.2 | hold a note under others: on a POLY track a held note keeps sounding while you record over it, goes on through the notes already there when you overdub, and SEQ > NOTES LEN runs on under later notes (a long bass under a melody); MONO: SET VOICE POLY when a key is played over a held one on a mono sound; no note left stuck when MIDI comes in too fast |
 | SLOOP 2.8.1 | the NOTES piano roll and the per-step sheets (OCT+ held), FILTER RESO, STEP ADVANCE, DRUM PREVIEW, the punch-in fade (FX held + SELECT), MIDI Bank Select |
 | Sustain pedal | the PEDAL jack: a footswitch of either polarity (the reading at power-on is "up": plug it in before switching on); the selected synth track sustains, CC 64 goes out over USB and TRS |
 | The pads | a pad hit flashes white for 80 ms, whatever it shows; triggered as a drum module's: a threshold (HOME menu > PADS > PAD THRESHOLD: LOW, MID, HIGH, MAX; PADS > PAD SCOPE shows what a pad measures), the velocity at the peak of the hit, a 40 ms mask after each note and a retrigger cancel that follows the pad's decay: one tap is one note, also a soft one whose finger stays on the pad; rolls up to 16 hits a second |
