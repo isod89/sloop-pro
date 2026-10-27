@@ -636,7 +636,7 @@ UI_SMALL static void step_edit(uint32_t slot, int32_t steps)
         break;
     case 2:                                               /* LEN: the note and the TIEs after it (2.6: ui.c note_set_len) */
         if (step_on(st)) {
-            uint32_t was = note_span(t, ui.cursor), n;   /* (2.8.2: under later notes too, POLY) */
+            uint32_t was = note_span(t, ui.cursor), n;   /* (2.8.3: under later notes too, POLY) */
             note_mark();
             fm1_irq_off();
             n = note_span_set(t, ui.cursor, (uint32_t)clamp((int32_t)was + steps, 1, NSTEP));
@@ -823,7 +823,7 @@ static uint8_t mi_ok;                                     /* the last frame reac
 UI_SMALL static uint32_t midi_held(void) { return mi_held[0] | mi_held[1] | mi_held[2] | mi_held[3]; }
 UI_SMALL static void midi_entry(void)                              /* (top of ui_input: every frame) */
 {
-    {   /* (2.8.2) recording on a MONO / LEGATO sound, a key over a held one: it replaces it. Said once a session */
+    {   /* (2.8.3) recording on a MONO / LEGATO sound, a key over a held one: it replaces it. Said once a session */
         static uint8_t mono_said;
         if (mono_hint && !mono_said) {
             mono_said = 1;

@@ -25,7 +25,7 @@
 #define BRAND_RESCUE "SLOOP PRO USB RESCUE"
 #define BRAND_URL "GITHUB.COM/ISOD89/SLOOP-PRO"
 #ifndef FELUCCA_VERSION
-#define FELUCCA_VERSION "SLOOP PRO 2.8.2"   /* ui.c's, with the product's name (the editor reads the digits) */
+#define FELUCCA_VERSION "SLOOP PRO 2.8.3"   /* ui.c's, with the product's name (the editor reads the digits) */
 #endif
 #else
 #define BRAND_NAME "SLOOP"

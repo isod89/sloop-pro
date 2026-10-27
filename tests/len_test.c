@@ -123,7 +123,7 @@ static void live5(uint32_t op, uint32_t x, uint32_t y, uint32_t z, uint32_t w)
     ed_live(a, 5);
 }
 
-/* SLOOP 2.8.2: SEQ > NOTES, LEN under later notes (POLY), the MONO and STEP FULL messages, shrink and delete */
+/* SLOOP 2.8.3: SEQ > NOTES, LEN under later notes (POLY), the MONO and STEP FULL messages, shrink and delete */
 static int fails;
 static void check(int ok, const char *what) { printf("len: %-74s %s\n", what, ok ? "ok" : "FAIL"); fails += !ok; }
 static void put(track_t *t, uint32_t i, uint32_t note, uint32_t ties)
