@@ -303,17 +303,17 @@ UI_SMALL static void ui_leds(void)
     smk_pad_piano = ui.layer == LY_SCALE;          /* SCALE held: the pads are a little piano (smk_input.h) */
     smk_pad_level = (uint8_t)padt_lvl();           /* LIGHTS > PAD THRESHOLD (ui_menu.c) */
     fm1_led[SMK_BTN_FADER_BANK] = fb_shown();      /* FADER BANK lit while its screen is up (one bank screen at a time) */
-    fm1_led[SMK_BTN_KNOB_BANK] = pick_pin || (int32_t)(fm1_ms - pick_k4_until) < 0;   /* KNOB BANK: picker pinned, PRESETS turning */
+    fm1_led[SMK_BTN_KNOB_BANK] = pick_pin || ms_pending(&pick_k4_until);   /* KNOB BANK: picker pinned, PRESETS turning */
     smk_pad_pick = (uint16_t)(pick_shown() ? 0xFFFFu : 0u);   /* (these pads: no notes) */
     smk_pad_grid = (uint8_t)padgrid_on();          /* (steps and tiles: reading order) */
     smk_pad_drums = (uint8_t)(!pad_steps && ui.layer == LY_PLAY && !smk_pad_grid);   /* the pads: DRUM KIT, NOTES (neither: */
     smk_pad_steps = (uint8_t)(pad_steps == PADS_STEPS && ui.layer == LY_PLAY && !smk_pad_grid);   /* the white keys) or STEPS */
     if (!is_drum(TSEL) && TSEL->p[P_AMODE])        /* ARP lit while the selected track's arpeggiator runs */
         fm1_led[panel.btn[B_ARP]] = 1;
-    if ((int32_t)(fm1_ms - bled_hold_until) < 0)   /* (console bled: only that LED) */
+    if (ms_pending(&bled_hold_until))   /* (console bled: only that LED) */
         for (c = 0; c < SMK_NLED; c++)
             fm1_led[c] = c == bled_id;
-    if ((int32_t)(fm1_ms - padled_hold_until) >= 0) {   /* the pads. Off is off: no glow layers */
+    if (!ms_pending(&padled_hold_until)) {   /* the pads. Off is off: no glow layers */
         static const uint8_t PAL[NTRK][3] = {{40, 124, 255}, {30, 204, 112}, {255, 198, 24}, {255, 98, 26}};   /* the screen's track colours (TE_COL) */
         const uint8_t *col = PAL[song.sel % NTRK];
         if (pick_shown())
@@ -412,7 +412,7 @@ UI_SMALL static void ui_leds(void)
                 uint32_t head = song.playing ? TSEL->seq_idx % 16u : 16u, sh;
                 if (is_drum(TSEL))                 /* outer-key drums: no pad light */
                     for (c = 0; c < 16u; c++)
-                        if ((int32_t)(fm1_ms - ext_quiet[c]) < 0)
+                        if (ext_quiet[c] - fm1_ms - 1u < 600u)   /* (set by the audio context: not cleared here) */
                             nt &= ~(1u << key_of_white(c));
                 for (c = 0; c < 16u; c++) {        /* c: pad = step */
                     sh = c == head || (nt >> key_of_white(SMK_WHITE_OF_PAD(c))) & 1u ? 1u : (g >> key_of_white(c)) & 1u ? 3u : 8u;
@@ -436,8 +436,8 @@ UI_SMALL static void ui_leds(void)
             fm1_irq_on();
             for (p = 0; p < SMK_NPAD; p++) {
                 if ((h >> p) & 1u)
-                    fl_until[p] = fm1_ms + 80u;
-                if ((int32_t)(fm1_ms - fl_until[p]) < 0)
+                    fl_until[p] = ms_deadline(80u);
+                if (ms_pending(&fl_until[p]))
                     padled_set(p, 120, 120, 120);
             }
         }
@@ -1478,9 +1478,13 @@ UI_SMALL static void ui_input(void)
     }
     if (rec_wait && !ft_on && !ci_on) {                 /* the REC screen, armed: how it records */
         rec_knobs();                                    /* (tempo and sound still work; the track too: */
+        enc_hold |= 15u << EN_K1;                       /* #6: KNOB 1..4 are the REC screen's this pass: a detent counted
+                                                         * after rec_knobs read it never reaches the page under it too (K3
+                                                         * START also moved TRACKS' LEN, the screen's K2 LENGTH) */
     } else if (rec_wait || ft_on) {                     /* the arm follows) */
         for (k = 0; k < 4u; k++)                        /* a take / the count-in: KNOB 1..4 edit nothing */
             panel_enc(EN_K1 + k);
+        enc_hold |= 15u << EN_K1;
     }
 #if FELUCCA_ARRANGER
     if (on_song_page()) {

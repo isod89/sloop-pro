@@ -32,7 +32,7 @@ M-VAVE SMK-37 — with what the bigger keyboard brings:
 | **MIDI** | USB MIDI and the TRS MIDI OUT jack (nothing left hanging when it is turned off), a full **DAW mode** with your own CC map |
 | **Models** | SMK-37 Pro (and Starrykey 37 Play), SMK-37 Elite, MKE-P37: one package each, the installer picks the right one |
 
-> **Status:** SLOOP Pro 2.8.3, a beta built on SLOOP 2.8.3. Install at your own risk (read the
+> **Status:** SLOOP Pro 2.8.4, a beta built on SLOOP 2.8.4 (fixes: no more distortion at the end of notes, 3.5 mm and USB; UNISON no longer stacks its voices in phase; PHYS strings in tune; NZ ARCADE, SAMPLE and GRAIN follow the top keys; a firm press on a layer button opens its pages; on REC READY a knob changes only its own value; the faders follow a real volume curve; the sustain pedal held as long as you like; no hanging note on TRS MIDI OUT; the lights no longer freeze after 25 days; the installer no longer freezes Chrome on Windows; the way back to the official firmware with V16). Install at your own risk (read the
 > [safety notes](SLOOP-PRO.md#safety)); your unit's calibration is never written, and M-VAVE's own updater takes you
 > back at any time.
 
@@ -57,7 +57,7 @@ page's link.
 
 ## For FM-1 owners
 
-This repository still builds SLOOP for the FM-1 (`./build.sh`, unchanged byte for byte from SLOOP 2.8.3). The FM-1
+This repository still builds SLOOP for the FM-1 (`./build.sh`, as SLOOP 2.8.4). The FM-1
 firmware and its installer live at [isod89/sloop-fm1](https://github.com/isod89/sloop-fm1); its README is kept here
 as [README-SLOOP.md](README-SLOOP.md).
 
@@ -72,8 +72,8 @@ SLOOP Pro stands on the open work of many people; [CREDITS.md](CREDITS.md) names
   [fm1-to-smk37](https://github.com/genkigenki/fm1-to-smk37), the board layer, the SMK-37 features, the reference
   SLOOP port and the update library of the web installer.
 - **[@ChanceTheMaker](https://github.com/ChanceTheMaker)**, [sloop-smk](https://github.com/ChanceTheMaker/sloop-smk):
-  the ideas behind the pedal, the pad brightness, the envelope fader bank, the TRS note-off flush and honest save
-  results.
+  the ideas behind the pedal, the pad brightness, the envelope fader bank, the TRS note-off flush, honest save
+  results and the installer's disposable MIDI session.
 - **The second core**: [@andrerezemini](https://github.com/andrerezemini) (sloop-lab),
   [Charles Vestal](https://github.com/charlesvestal) (X0X), [@keremimo](https://github.com/keremimo) (Melodee).
 - **And**: [@renebohne](https://github.com/renebohne), [@juanjiant-bit](https://github.com/juanjiant-bit) (JIANT FM),

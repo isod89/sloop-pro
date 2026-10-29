@@ -57,6 +57,50 @@ static const param_desc_t *fb_param(uint32_t b, uint32_t i, int16_t **vp)
     return &TP[TID[b & 3u]];
 }
 
+/* (#7) a fader's position v (0..127) -> a synth track's LEVEL. LEVEL is in 1/2 dB steps (params.c F_DB: 0 off, 1 -55.5 dB ..
+ * 112 0 dB .. 127 +7.5 dB); read as LEVEL steps, the travel's lower half was -55..-24 dB, heard as muted. GM's volume law
+ * instead (40 log10(v / 127), as CC 11 EXPRESSION, core.h expr_gain): the gain (LEVEL_Q12) the nearest above
+ * LEVEL_Q12[127] (v / 127)^2: 0 off, 1 the quietest step, half the travel -4 dB (LEVEL's power-on 104), the top 127 */
+static int16_t fb_level(uint32_t v)
+{
+    uint32_t want = (LEVEL_Q12[127] * (v > 127u ? 127u : v) * (v > 127u ? 127u : v) + 16128u) / 16129u, l = 0;
+    while (l < 127u && LEVEL_Q12[l] < want)
+        l++;
+    return (int16_t)l;
+}
+
+/* fader i moved to v (0..127) in bank b (main.c smk_faders) */
+static void fb_move(uint32_t b, uint32_t i, uint32_t v)
+{
+    int16_t *pv;
+    switch (b) {
+    case 4:                                           /* SLOOP Pro: E, the selected synth track's ATTACK, DECAY,
+                                                       * SUSTAIN, RELEASE over their ranges (none on the drum track) */
+        if (!is_drum(TSEL)) {
+            const param_desc_t *d = &TP[P_ATK + i];
+            TSEL->p[P_ATK + i] = (int16_t)(d->min + ((int32_t)d->max - d->min) * (int32_t)v / 127);
+        }
+        break;
+    case 1:
+        trk[i].p[P_TFLT] = (int16_t)((int32_t)v - 64);
+        break;
+    case 2:
+        pv = i == TRK_DRUM ? &song.g[G_DRREV] : &trk[i].p[P_REV];
+        *pv = (int16_t)v;
+        break;
+    case 3:
+        pv = i == TRK_DRUM ? &song.g[G_DRDLY] : &trk[i].p[P_DLY];
+        *pv = (int16_t)v;
+        break;
+    default:                                          /* A: the drums' LVL (linear, 0..127), the synths' LEVEL by GM's law */
+        if (i == TRK_DRUM)
+            song.g[G_DRLVL] = (int16_t)v;
+        else
+            trk[i].p[P_LEVEL] = fb_level(v);
+        break;
+    }
+}
+
 static void fb_draw(void)
 {
     static uint32_t shown;

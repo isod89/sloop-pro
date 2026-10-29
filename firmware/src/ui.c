@@ -3,7 +3,7 @@
 /* Felucca user interface. Four columns map to KNOB 1..4. Rendering is lazy:
  * every element remembers what it last drew and is redrawn only on change. */
 #ifndef FELUCCA_VERSION
-#define FELUCCA_VERSION "SLOOP 2.8.3"  /* the beat machine firmware for the FM-1 (based on Felucca) */
+#define FELUCCA_VERSION "SLOOP 2.8.4"  /* the beat machine firmware for the FM-1 (based on Felucca) */
 #endif
 static void project_save(uint32_t slot);
 static void arrangement_save(void);
@@ -978,7 +978,9 @@ UI_SMALL static void pc_poll(void)
             if (&trk[i] == TSEL)
                 sync_reload = 1;
         } else if (bank == PC_USER_BANK) {           /* (2.7.2) user presets straight: PC n = user slot n (0..31) */
-            if (!up_load_to(&trk[i], n))             /* (an empty slot or past the end: nothing) */
+            if (up_load_to(&trk[i], n))              /* (an empty slot or past the end: nothing; after 2.8.3: it
+                                                      * read the result the wrong way round: "PROG n" for an empty
+                                                      * slot, no message for a preset loaded) */
                 continue;
         } else {                                     /* (2.7.2) linear: bank 0 the sounds 0..127, bank 1 128..255 */
             n = bank * 128u + (r - 1u);

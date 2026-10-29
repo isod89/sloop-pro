@@ -1258,7 +1258,7 @@ A 2.4 backup restores into 2.4 (or later) only. **Save a backup before every upd
 
 ### Going back to the official firmware
 
-**(2.8)** The in-browser return-to-stock was removed, because it was not reliable on every system. To go back to the official firmware, use **M-VAVE's own updater, M-UPGRADE** (m-vave.com → Downloads → PC Software → M-UPGRADE) with the official **FM-1 V15** firmware (PC Firmware → FM-1 V15); close every other app that uses MIDI first. Save a backup with the editor before you go. To come back, install SLOOP again and restore your backup.
+**(2.8)** The in-browser return-to-stock was removed, because it was not reliable on every system. To go back to the official firmware, use **M-VAVE's own updater, M-UPGRADE** (m-vave.com → Downloads → PC Software → M-UPGRADE) with the official **FM-1** firmware (PC Firmware → FM-1, **V16**, `FM-1.fwsc`); close every other app that uses MIDI first. If M-UPGRADE does not find the FM-1 (SLOOP Pro shows up under its own name, and some systems' M-UPGRADE then does not list it): open **Clipper**'s installer page (https://isod89.github.io/clipper-fm1/webapp/installer/) and use its **Return to the official firmware** (it works with SLOOP on the FM-1: no need to install Clipper) with that file (V16 or V15; checked before anything is written). Save a backup with the editor before you go. To come back, install SLOOP again and restore your backup.
 
 If the official firmware comes up with odd settings or a scrambled display, it is reading the settings SLOOP left in the FM-1's memory — nothing is damaged. A factory reset in M-VAVE's own firmware, or M-UPGRADE's full restore, clears it; and installing SLOOP again brings your work back exactly as it was.
 

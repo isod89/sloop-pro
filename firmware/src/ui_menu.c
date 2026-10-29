@@ -524,7 +524,7 @@ UI_SMALL static void mi_set(uint32_t i, int32_t s)
         padled_dim_set(2u - lv);
         for (p = 0; p < SMK_NPAD; p++)
             padled_set(p, PAL[(p % 8u) / 2u][0], PAL[(p % 8u) / 2u][1], PAL[(p % 8u) / 2u][2]);
-        padled_hold_until = fm1_ms + 1500u;
+        padled_hold_until = ms_deadline(1500u);
         break;
     }
     case MI_VEL:                                       /* DYNAMIC .. FIXED 127 (stops at the ends); OCT+ steps round */

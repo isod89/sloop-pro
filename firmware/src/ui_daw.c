@@ -438,10 +438,10 @@ static void daw_leds(void)
         else
             fm1_led[id] = e.type == DT_TOG ? daw_tog[i] : (daw_bdown >> c) & 1u;
     }
-    if ((int32_t)(fm1_ms - bled_hold_until) < 0)  /* (console bled: only that LED) */
+    if (ms_pending(&bled_hold_until))  /* (console bled: only that LED) */
         for (c = 0; c < SMK_NLED; c++)
             fm1_led[c] = c == bled_id;
-    if ((int32_t)(fm1_ms - padled_hold_until) < 0)
+    if (ms_pending(&padled_hold_until))
         return;
     for (c = 0; c < 16u; c++) {
         uint32_t i = DAW_PAD0 + 16u * (daw_pbank & 1u) + c, held = (daw_pdown >> c) & 1u;

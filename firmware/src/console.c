@@ -325,7 +325,7 @@ static void con_padtest(void)
     padled_set(9, 0, 40, 0);
     padled_set(10, 0, 0, 40);
     padled_set(11, 40, 40, 40);
-    padled_hold_until = fm1_ms + 20000u;
+    padled_hold_until = ms_deadline(20000u);
     con_puts("top row from the left: red green blue white\r\n");
 }
 
@@ -339,7 +339,7 @@ static void con_bled(const char *p)
         return;
     }
     bled_id = (uint8_t)n;
-    bled_hold_until = fm1_ms + 8000u;
+    bled_hold_until = ms_deadline(8000u);
     con_puts("on\r\n");
 }
 #endif

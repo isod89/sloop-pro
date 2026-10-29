@@ -1,4 +1,4 @@
-# SLOOP Pro 2.8.3 — les essais sur le SMK-37
+# SLOOP Pro 2.8.4 — les essais sur le SMK-37
 
 Tout ce qu'il faut, dans l'ordre. Le guide rapide (commandes, menu) : [DEMARRAGE-RAPIDE-PRO-FR.md](DEMARRAGE-RAPIDE-PRO-FR.md) ;
 la référence complète : [SLOOP-PRO.md](SLOOP-PRO.md).
@@ -16,7 +16,7 @@ la référence complète : [SLOOP-PRO.md](SLOOP-PRO.md).
 
 Double-clic sur **`INSTALL-SLOOP-PRO.bat`**. Trois compilations (Pro, Elite, MKE-P37), quelques minutes. On doit voir :
 
-- `S L O O P   P R O   2.8.3`
+- `S L O O P   P R O   2.8.4`
 - « Building SLOOP Pro for the SMK-37 Pro / SMK-37 Elite / MKE-P37 »
 - les paquets et leur SHA-256 dans `build\release\` (`sloop-pro.fwsc`, `sloop-pro-elite.fwsc`, `sloop-pro-mke.fwsc`)
 - l'installateur qui s'ouvre : `http://localhost:8767/webapp/installer/`
@@ -70,7 +70,7 @@ Ligne de commande (la même chose) : `python tools\fm1_install.py build\release\
 
 | # | Action | Attendu |
 |---|---|---|
-| 1 | Allumer | Logo SLOOP, badge orange **PRO** à droite, « 2.8.3 » dessous |
+| 1 | Allumer | Logo SLOOP, badge orange **PRO** à droite, « 2.8.4 » dessous |
 | 2 | PATCH maintenu (menu) → K2 jusqu'à SYSTEM → ABOUT → OCT+ ; puis 2ND CORE | « SLOOP PRO », version, date ; 2ND CORE sur **OFF** (le défaut) |
 | 3 | Les 37 touches, doux puis fort | Toutes jouent avec la nuance ; les 5 basses et 5 hautes : notes ; sur la piste 4 (batterie) : drums |
 | 4 | Les 16 pads | Kit de batterie, orange, plus vifs quand ils sonnent ; rangée du haut = pads 1–8 |

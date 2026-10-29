@@ -6,7 +6,7 @@ GPL-3.0-only unless the table at the end says otherwise ([LICENSING.md](LICENSIN
 
 ## SLOOP Pro
 
-- **isod89 (Sodwave)**, [isod89/sloop-pro](https://github.com/isod89/sloop-pro): SLOOP Pro, the port of SLOOP 2.8.3
+- **isod89 (Sodwave)**, [isod89/sloop-pro](https://github.com/isod89/sloop-pro): SLOOP Pro, the port of SLOOP 2.8.4
   to the SMK-37, its installer page and its tests. The sustain pedal, PAD LIGHTS, FADER BANK E (envelope), the NOTES
   pad mode, the TRS note-off flush and honest save results were built on the ideas credited below.
 
@@ -17,7 +17,7 @@ GPL-3.0-only unless the table at the end says otherwise ([LICENSING.md](LICENSIN
   engines, the sequencer, the web editor, the M-UPGRADE-compatible installer and update loader, the HAL, the FM6
   engine, the INSERT effects, LFO 2, the ANALOG filters, MIDI LEARN, the arpeggiator modes, and much more.
 - **isod89 and the SLOOP contributors**, [isod89/sloop-fm1](https://github.com/isod89/sloop-fm1): SLOOP, the FM-1
-  firmware that SLOOP Pro takes whole (2.8.3). Everyone credited in SLOOP is credited here too:
+  firmware that SLOOP Pro takes whole (2.8.4). Everyone credited in SLOOP is credited here too:
   [README-SLOOP.md, Credits and thanks](README-SLOOP.md#credits-and-thanks).
 
 ## The SMK-37 port
@@ -42,7 +42,10 @@ GPL-3.0-only unless the table at the end says otherwise ([LICENSING.md](LICENSIN
   - pad brightness (PAD LIGHTS);
   - an envelope on the faders;
   - a flush so no MIDI note hangs on the TRS output;
-  - reporting a save the flash did not take.
+  - reporting a save the flash did not take;
+  - the installer's MIDI session in a disposable document (`MidiSession` in `web/fm1ota.js`, after his
+    `web/midi-session.js`): Chrome no longer holds the keyboard while it restarts into its loader and back (the
+    browser freezes of Windows USB installs he reported, [sloop-pro #3](https://github.com/isod89/sloop-pro/issues/3)).
 
   His work on Windows USB installs and on the MIDI session also helped find why the first browser installs stalled.
   In SLOOP itself: the TRS MIDI input fix (Felucca Salt) and work on the MIDI clock.

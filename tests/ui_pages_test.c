@@ -39,17 +39,21 @@ static void lcd_blit(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const uint1
 #include "../firmware/src/gfx.c"
 static void lcd_fill(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint16_t c)
 { uint32_t i,j; assert(x+w<=240&&y+h<=240); for(j=0;j<h;j++)for(i=0;i<w;i++)screen[(y+j)*240+x+i]=swap16(c); }
-static int32_t encs[7];
+static int32_t encs[8];                             /* (8: the SMK-37 harness, tests/daw_ui_test.c, sets panel.enc 1..7) */
 static uint32_t fm1_ticks(void) { return fm1_ms * 1000u * 24u; }
 #define FM1_TICKS_PER_US 24u
-static int32_t enc_late[7];                         /* a detent the timer ISR counts just after a read (as on the FM-1, where the
+static int32_t enc_late[8];                         /* a detent the timer ISR counts just after a read (as on the FM-1, where the
                                                      * scan runs while a UI pass does): it lands in the same pass */
 static int32_t fm1_enc_take(uint32_t e) { int32_t s = encs[e]; encs[e] = enc_late[e]; enc_late[e] = 0; return s; }
 static uint8_t fm1_led[16], fm1_led_dim[16], fm1_led_bg[16];
 static volatile uint16_t fm1_led_bg_ns;
 #define FM1_NCOL 16u
+#ifndef FM1_NBTN                                    /* (tests/knob_walk_test.c: the SMK-37's 18 and 8) */
 #define FM1_NBTN 14u
+#endif
+#ifndef FM1_NENC
 #define FM1_NENC 7u
+#endif
 static const int8_t FM1_KEYMAP[5][16];
 static void fm1_led_key(uint32_t id, int on) { (void)id; (void)on; }
 static uint32_t edges_btn, notes_seen;
@@ -63,7 +67,16 @@ static struct { uint32_t magic, stage, page, home, ui_frames; } felucca_dbg;
 #define SCOPE_N 512u
 static int16_t scope_buf[SCOPE_N], scope_bufr[SCOPE_N];
 static uint32_t scope_w;
+#ifdef UI_PANEL_SMK                                 /* (tests/knob_walk_test.c: panel.c as the SMK-37 builds it, KNOB LAYOUT) */
+#define BOARD_SMK37 1
+#define SMK_ENC_MASTER 0u
+static uint8_t smk_master_enc;
+static int8_t smk_master_dir;
+#endif
 #include "../firmware/src/panel.c"
+#ifdef UI_PANEL_SMK
+#undef BOARD_SMK37
+#endif
 #include "../firmware/src/ui.c"
 static uint32_t saves, loads, erases;
 static int project_used(uint32_t i) { return i < 2; }
@@ -271,6 +284,28 @@ int main(int argc, char **argv)
         for (f = 0; f < 18u; f++) { frame(); shown |= ui.layer == LY_FX; }
         release(B_FX); frame();
         check(!shown && cur_fam() == FAM_FX, "2.8.3: FX tapped in 0.3 s: no flash of the layer, the FX pages");
+    }
+    {   /* (after 2.8.3, clipper-fm1 #24) a firm press, let go untouched within a second, opens what a quick tap opens:
+         * a press of 0.6 s used to open nothing (TAP 0.45 s: the layer flashed, the TRACKS screen stayed); held
+         * 1.3 s: a look at the layer, back where it was */
+        static const uint32_t LB[7] = {B_FX, B_EDIT, B_ARP, B_SEQ, B_SCL, B_GLO, B_SAVE};
+        uint32_t q, ok = 1;
+        for (q = 0; q < 7u; q++) {
+            uint32_t h_home, h_page, t_home, t_page;
+            go_home(); frames(2);
+            h_home = ui.home; h_page = ui.page;
+            tap(LB[q]); frames(3);
+            t_home = ui.home; t_page = ui.page;
+            ok &= t_home != h_home || t_page != h_page;                    /* (the tap opens something) */
+            go_home(); frames(2);
+            press(LB[q]); frames(37); release(LB[q]); frames(3);           /* (0.6 s) */
+            ok &= ui.home == t_home && ui.page == t_page && !ui.menu;
+            go_home(); frames(2);
+            press(LB[q]); frames(80); release(LB[q]); frames(3);           /* (1.3 s) */
+            ok &= ui.home == h_home && ui.page == h_page && ui.layer == LY_PLAY;
+        }
+        go_home(); frames(2);
+        check(ok, "FX, EDIT, ARP, SEQ, SEL, GLO, SAVE pressed 0.6 s untouched: what a tap opens; held 1.3 s: no page");
     }
     go_home(); frame();
     press(B_FX); frames(24); check(ui.layer == LY_FX && punch.hold, "FX held: the punch layer shows");   /* (2.8.3: after 0.35 s) */
@@ -1486,7 +1521,7 @@ int main(int argc, char **argv)
         { int16_t bpm = song.g[G_BPM], lv = trk[0].p[P_LEVEL];
           encs[panel.enc[EN_K2]] = 5; frame();
           check(trk[0].p[P_LEVEL] == lv && song.g[G_BPM] == bpm, "visualiser: KNOB 2 (the hidden TRACKS screen) edits nothing, SELECT is not the tempo"); }
-        press(B_GLO); frames(40);                  /* (held past a tap) */
+        press(B_GLO); frames(70);                  /* (held past a tap: 1 s, clipper-fm1 #24) */
         check(ui.layer == LY_MIX, "visualiser: a layer held shows its screen");
         release(B_GLO); frames(4);
         check(vis_shown(), "visualiser: ... and it comes back");

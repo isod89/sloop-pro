@@ -299,6 +299,7 @@ static void glide_set(track_t *t, voice_t *v, int glide)
 #define VP_ON 1u
 #define VP_OFF 2u
 #define VP_GLIDE 4u
+#define VP_UNI 8u   /* (after Clipper 1.2) an extra UNISON voice: its start spread (unison_spread) */
 static void voice_start(track_t *t, voice_t *v, uint32_t note, uint32_t vel, int glide)
 {
     const engine_t *e = ENGINES[t->engine];
@@ -364,6 +365,37 @@ static void voice_start(track_t *t, voice_t *v, uint32_t note, uint32_t vel, int
     }
 }
 
+/* a UNISON voice's start phases moved by r (Q32: a turn of its note), as if it had started that much of a period
+ * sooner: in phase the voices stack, spread they sum as noise */
+static void unison_spread(track_t *t, voice_t *v, uint32_t r)
+{
+    const engine_t *e = ENGINES[t->engine];
+    /* (after Clipper 1.2) each engine moves all its oscillators (and reseeds its noise): ph[0] alone left the others in
+     * phase (ANALOG's osc 2, TRIO's 2 and 3, DIGITAL's and FM6's operators, the subs, SAMPLE's start...) */
+    if (e == &ENG_ANALOG)
+        analog_spread(t, v, r);
+    else if (e == &ENG_DIGITAL)
+        digital_spread(t, v, r);
+    else if (e == &ENG_PHASE)
+        phase_spread(t, v, r);
+    else if (e == &ENG_LOFI)
+        lofi_spread(t, v, r);
+    else if (e == &ENG_TRIO)
+        trio_spread(t, v, r);
+    else if (e == &ENG_NOISE)
+        noise_spread(t, v, r);
+    else if (e == &ENG_FM6)
+        fm6_spread(t, v, r);
+    else if (e == &ENG_SAMPLE)
+        sample_spread(t, v, r);
+#if FELUCCA_SLICE
+    else if (e == &ENG_SLICE)
+        ;                                            /* (slices: as played) */
+#endif
+    else
+        v->ph[0] += r;
+}
+
 /* MONO / LEGATO / UNISON: one note on one voice (eight for UNISON, or the
  * engine's voice cap, spread by DETUNE over the same width) */
 static void mono_play(track_t *t, uint32_t note, uint32_t vel, int retrig, int glide)
@@ -381,11 +413,12 @@ static void mono_play(track_t *t, uint32_t note, uint32_t vel, int retrig, int g
                 continue;                                   /* no room for this extra UNISON voice */
             /* level: about the same sum for 8 or 4 voices at random phases */
             voice_start(t, v, note, nv >= NVOICE ? vel * 36u / 100u : nv > 1u ? vel / 2u : vel, glide);
-            if (nv > 1u && i && !eng_sampled(ENGINES[t->engine]) && !was_sounding) {   /* random start phases: */
+            if (nv > 1u && i && !was_sounding) {   /* random start phases (SAMPLE: its start; not SLICE): */
                 static uint32_t seed = 0x1234567u;          /* in phase they stack, evenly spread they cancel */
                 seed = seed * 1664525u + 1013904223u;
-                v->ph[0] += seed;
-            }
+                unison_spread(t, v, seed);
+            } else if (nv > 1u && i && (v->pend & VP_ON))
+                v->pend |= VP_UNI;                          /* (a sample's, after its fade: spread as it starts) */
         } else {                                            /* legato: new pitch, same envelope */
             v->note = (uint8_t)note;
             v->pitch16 = (int32_t)note * 16;
@@ -783,6 +816,11 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
             v->pend = 0;
             if (voice_room(t, 0)) {                     /* (it was not counted while fading: within the budget) */
                 voice_start(t, v, v->pend_note, v->pend_vel, (pf & VP_GLIDE) != 0);
+                if (pf & VP_UNI) {                      /* (after Clipper 1.2) UNISON: not in phase with the others */
+                    static uint32_t seed = 0x13579BDu;
+                    seed = seed * 1664525u + 1013904223u;
+                    unison_spread(t, v, seed);
+                }
                 if (pf & VP_OFF) {                      /* let go within the fade (~1.5 ms): released as it starts */
                     v->gate = 0;
                     v->stage = 3;

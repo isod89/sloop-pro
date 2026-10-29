@@ -131,7 +131,7 @@ static void pick_open_tmp(void)                    /* a PRESETS turn: the curren
 {
     pick_tmp = 1;
     pick_t = fm1_ms;
-    pick_k4_until = fm1_ms + 150u;
+    pick_k4_until = ms_deadline(150u);
     pick_home();
 }
 static void pick_turn(int32_t d)                   /* < > */

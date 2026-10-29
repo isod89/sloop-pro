@@ -545,6 +545,7 @@ static void proj_apply(const project_t *p, int all)
                     st->n = 4;
                 if (st->time > ST_REST)
                     st->time = ST_REST;
+                st->vel &= 127u;                    /* (after 2.8.3: past 127 from a file, up to twice as loud) */
                 for (j = 0; j < 4u; j++)
                     st->note[j] &= 127u;
             }

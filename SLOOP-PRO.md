@@ -1,7 +1,7 @@
 # SLOOP Pro: SLOOP on the M-Vave SMK-37
 
 The M-Vave SMK-37 has the FM-1's chip (JieLi AC791N), so SLOOP runs on it as a target board: `BOARD=smk37`. That
-build is **SLOOP Pro**: SLOOP 2.8.3 with the SMK-37's 37 velocity keys, 16 RGB pads, 4 faders, 8 knobs, wheels,
+build is **SLOOP Pro**: SLOOP 2.8.4 with the SMK-37's 37 velocity keys, 16 RGB pads, 4 faders, 8 knobs, wheels,
 pedal and TRS MIDI out. Everything SMK-37-specific sits behind `BOARD_SMK37`; the FM-1 build is SLOOP, unchanged,
 byte for byte.
 
@@ -17,6 +17,7 @@ hanging TRS notes, a save that never claims to be one when the flash failed).
 
 | | |
 |---|---|
+| SLOOP 2.8.4 | no more distortion at the end of notes, 3.5 mm and USB; UNISON no longer stacks its voices in phase; PHYS strings in tune; NZ ARCADE, SAMPLE and GRAIN follow the top keys; a firm press on a layer button opens its pages; on REC READY a knob changes only its own value; the faders follow a real volume curve; the sustain pedal held as long as you like; no hanging note on TRS MIDI OUT; the lights no longer freeze after 25 days; the installer no longer freezes Chrome on Windows; the way back to the official firmware with V16 |
 | SLOOP 2.8.3 | the kick no longer cut on a busy beat (a drum hit takes a free voice first, the kick last); the hold pages no longer flash on a quick tap; a free take keeps a held note under the ones played over it; a chopped sample played again starts from silence with its ATK (no click); the second core hardened (a USB backup no longer crashes it; if core 1 fails, one core goes on) |
 | SLOOP 2.8.2 | hold a note under others: on a POLY track a held note keeps sounding while you record over it, goes on through the notes already there when you overdub, and SEQ > NOTES LEN runs on under later notes (a long bass under a melody); MONO: SET VOICE POLY when a key is played over a held one on a mono sound; no note left stuck when MIDI comes in too fast |
 | SLOOP 2.8.1 | the NOTES piano roll and the per-step sheets (OCT+ held), FILTER RESO, STEP ADVANCE, DRUM PREVIEW, the punch-in fade (FX held + SELECT), MIDI Bank Select |

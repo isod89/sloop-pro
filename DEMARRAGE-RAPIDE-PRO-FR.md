@@ -1,6 +1,6 @@
 # SLOOP Pro — démarrage rapide (SMK-37)
 
-SLOOP Pro, c'est SLOOP 2.8.3 sur le clavier M-VAVE SMK-37 (Pro, Elite, MKE-P37, Starrykey 37 Play). Tout le
+SLOOP Pro, c'est SLOOP 2.8.4 sur le clavier M-VAVE SMK-37 (Pro, Elite, MKE-P37, Starrykey 37 Play). Tout le
 fonctionnement de SLOOP reste le même ; ce guide dit où sont les choses sur le SMK-37 et comment l'installer.
 La référence complète (en anglais) : [SLOOP-PRO.md](SLOOP-PRO.md). Le guide de SLOOP : [GUIDE.md](GUIDE.md) et
 [DEMARRAGE-RAPIDE-FR.md](DEMARRAGE-RAPIDE-FR.md).
@@ -92,7 +92,7 @@ emplacements), renvoyez vos samples depuis vos fichiers WAV.
 Notez ce qui va et ce qui ne va pas, avec le modèle (Pro / Elite / MKE) et le numéro de ligne :
 
 1. [ ] Installation depuis le firmware M-VAVE : la page indique le bon modèle et « Terminé ».
-2. [ ] Démarrage : logo SLOOP avec le badge **PRO** orange, version 2.8.3 dessous. Menu > SYSTEM > ABOUT : « SLOOP PRO ».
+2. [ ] Démarrage : logo SLOOP avec le badge **PRO** orange, version 2.8.4 dessous. Menu > SYSTEM > ABOUT : « SLOOP PRO ».
 3. [ ] Les 37 touches jouent, douces et fortes (vélocité) ; les 5 touches basses et hautes aussi.
 4. [ ] Les 16 pads : kit de batterie (pads orange, plus vifs quand ils sonnent) ; KNOB BANK + FADER BANK : NOTES (le son de la piste choisie), encore une fois : les pas.
    La rangée du haut = pas 1–8.

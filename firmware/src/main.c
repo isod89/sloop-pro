@@ -149,7 +149,6 @@ static void smk_faders(void)
     }
     for (i = 0; i < 4u && i < NTRK; i++) {
         uint32_t v = fm1_in.fader[i];
-        int16_t *pv;
         if (last[i] == 0xFF || fm1_in.frames < 200u) {   /* (the first readings settle) */
             last[i] = (uint8_t)v;
             continue;
@@ -157,30 +156,7 @@ static void smk_faders(void)
         if (v == last[i])
             continue;
         last[i] = (uint8_t)v;
-        switch (smk_fbank) {
-        case 4:                                           /* SLOOP Pro: E, the selected synth track's ATTACK, DECAY,
-                                                           * SUSTAIN, RELEASE over their ranges (none on the drum track) */
-            if (!is_drum(TSEL)) {
-                const param_desc_t *d = &TP[P_ATK + i];
-                TSEL->p[P_ATK + i] = (int16_t)(d->min + ((int32_t)d->max - d->min) * (int32_t)v / 127);
-            }
-            break;
-        case 1:
-            trk[i].p[P_TFLT] = (int16_t)((int32_t)v - 64);
-            break;
-        case 2:
-            pv = i == TRK_DRUM ? &song.g[G_DRREV] : &trk[i].p[P_REV];
-            *pv = (int16_t)v;
-            break;
-        case 3:
-            pv = i == TRK_DRUM ? &song.g[G_DRDLY] : &trk[i].p[P_DLY];
-            *pv = (int16_t)v;
-            break;
-        default:
-            pv = i == TRK_DRUM ? &song.g[G_DRLVL] : &trk[i].p[P_LEVEL];
-            *pv = (int16_t)v;
-            break;
-        }
+        fb_move(smk_fbank, i, v);                         /* (ui_fbank.c) */
         ui.force = 1;
     }
 }
