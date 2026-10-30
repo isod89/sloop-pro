@@ -25,3 +25,8 @@ S=${2:-1}
 ${CC:-cc} -O1 -g -w -fsanitize=address,undefined -fno-sanitize=shift-base,signed-integer-overflow -fno-sanitize-recover=all \
     -I"$OUT/gen" -Ibuild/gen -Ifirmware/src -Ifirmware/hal -o "$OUT/editor_repro" tests/editor_repro.c -lm
 for r in 1 2 3; do "$OUT/editor_repro" $r; done
+# (2.8.4) power-on after an install: the parts sound as their sounds, a working project Clipper left: default sounds
+${CC:-cc} -O1 -g -w -fsanitize=address,undefined -fno-sanitize=shift-base,signed-integer-overflow -fno-sanitize-recover=all \
+    -I"$OUT/gen" -Ibuild/gen -Ifirmware/src -Ifirmware/hal -o "$OUT/boot_sound_test" tests/boot_sound_test.c -lm
+"$OUT/boot_sound_test" > "$OUT/boot_sound.log" || { cat "$OUT/boot_sound.log"; exit 1; }
+tail -n 1 "$OUT/boot_sound.log"
